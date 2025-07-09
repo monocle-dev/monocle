@@ -26,6 +26,7 @@ func MigrateDatabase() {
 	err := DB.AutoMigrate(
 		&models.User{},
 		&models.Project{},
+		&models.ProjectMembership{},
 		&models.Monitor{},
 		&models.MonitorCheck{},
 		&models.Incident{},
