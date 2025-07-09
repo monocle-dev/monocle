@@ -9,7 +9,7 @@ import (
 type Incident struct {
 	gorm.Model
 
-	MonitorID   uint   `gorm:"not null"`
+	MonitorID   uint   `gorm:"not null;index"`
 	Status      string `gorm:"not null"`
 	Severity    string `gorm:"not null"`
 	Title       string `gorm:"not null"`
