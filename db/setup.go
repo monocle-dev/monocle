@@ -32,15 +32,5 @@ func MigrateDatabase() error {
 		&models.NotificationRule{},
 	}
 
-	migrator := DB.Migrator()
-
-	for _, model := range models {
-		if !migrator.HasTable(model) {
-			if err := DB.AutoMigrate(model); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return DB.AutoMigrate(models...)
 }
