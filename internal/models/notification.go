@@ -18,5 +18,5 @@ type Notification struct {
 
 	// Relationships
 	Incident Incident `gorm:"foreignKey:IncidentID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
-	User     User     `gorm:"foreignKey:UserID;constraint:OnUpdate:Cascade,OnDelete:SET NULL"`
+	User     User     `gorm:"foreignKey:UserID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 }
