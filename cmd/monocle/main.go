@@ -24,8 +24,13 @@ func main() {
 		log.Fatal("POSTGRES_DSN environment variable is not set")
 	}
 
-	db.ConnectDatabase(dsn)
-	db.MigrateDatabase()
+	if err = db.ConnectDatabase(dsn); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	if err = db.MigrateDatabase(); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
 
 	r := router.NewRouter()
 

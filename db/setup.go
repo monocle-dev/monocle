@@ -1,8 +1,6 @@
 package db
 
 import (
-	"log"
-
 	"github.com/monocle-dev/monocle/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -10,21 +8,20 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDatabase(dsn string) {
+func ConnectDatabase(dsn string) error {
 	var err error
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
+		return err
 	}
 
-	log.Println("Database connection established successfully")
+	return nil
 }
 
-func MigrateDatabase() {
-	err := DB.AutoMigrate(
-		&models.User{},
+func MigrateDatabase() error {
+	models := []interface{}{
 		&models.Project{},
 		&models.ProjectMembership{},
 		&models.Monitor{},
@@ -32,11 +29,17 @@ func MigrateDatabase() {
 		&models.Incident{},
 		&models.Notification{},
 		&models.NotificationRule{},
-	)
-
-	if err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	log.Println("Database migration completed successfully")
+	migrator := DB.Migrator()
+
+	for _, model := range models {
+		if !migrator.HasTable(model) {
+			if err := DB.AutoMigrate(model); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
