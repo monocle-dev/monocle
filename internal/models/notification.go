@@ -9,7 +9,7 @@ import (
 type Notification struct {
 	gorm.Model
 
-	IncidentID uint   `gorm:"not null"`
+	IncidentID uint   `gorm:"not null;index"`
 	UserID     uint   `gorm:"not null"`
 	Channel    string `gorm:"not null"`
 	Status     string `gorm:"not null"`

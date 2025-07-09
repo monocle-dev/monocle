@@ -11,7 +11,7 @@ type Project struct {
 
 	// Relationships
 	Owner              User                `gorm:"foreignKey:OwnerID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
-	ProjectMemberships []ProjectMembership `gorm:"foreignKey:ProjectID"`
+	ProjectMemberships []ProjectMembership `gorm:"foreignKey:ProjectID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 	Monitors           []Monitor           `gorm:"foreignKey:ProjectID"`
 	NotificationRules  []NotificationRule  `gorm:"foreignKey:ProjectID"`
 }
