@@ -22,6 +22,7 @@ func ConnectDatabase(dsn string) error {
 
 func MigrateDatabase() error {
 	models := []interface{}{
+		&models.User{},
 		&models.Project{},
 		&models.ProjectMembership{},
 		&models.Monitor{},
