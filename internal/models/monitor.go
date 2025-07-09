@@ -8,7 +8,7 @@ import (
 type Monitor struct {
 	gorm.Model
 
-	ProjectID uint           `gorm:"not null"` // Foreign key to the Project
+	ProjectID uint           `gorm:"not null;index"` // Foreign key to the Project
 	Project   Project        `gorm:"foreignKey:ProjectID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 	Name      string         `gorm:"not null"`
 	Type      string         `gorm:"not null"` // "http", "ping", "database", etc.

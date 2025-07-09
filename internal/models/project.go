@@ -7,7 +7,7 @@ type Project struct {
 
 	Name        string `gorm:"not null"`
 	Description string
-	OwnerID     uint `gorm:"not null"`
+	OwnerID     uint `gorm:"not null;index"`
 
 	// Relationships
 	Owner              User                `gorm:"foreignKey:OwnerID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`

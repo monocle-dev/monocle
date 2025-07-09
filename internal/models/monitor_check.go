@@ -9,7 +9,7 @@ import (
 type MonitorCheck struct {
 	gorm.Model
 
-	MonitorID    uint   `gorm:"not null"`
+	MonitorID    uint   `gorm:"not null;index"`
 	Status       string `gorm:"not null"`
 	ResponseTime int    `gorm:"not null"`
 	Message      string

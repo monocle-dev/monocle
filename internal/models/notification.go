@@ -10,7 +10,7 @@ type Notification struct {
 	gorm.Model
 
 	IncidentID uint   `gorm:"not null;index"`
-	UserID     uint   `gorm:"not null"`
+	UserID     uint   `gorm:"not null;index"`
 	Channel    string `gorm:"not null"`
 	Status     string `gorm:"not null"`
 	Message    string
