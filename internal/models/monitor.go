@@ -13,7 +13,7 @@ type Monitor struct {
 	Name      string         `gorm:"not null"`
 	Type      string         `gorm:"not null"` // "http", "ping", "database", etc.
 	Status    string         `gorm:"not null"` // "active", "inactive", "error", etc.
-	Interval  int            `gorm:"not null"` // Interval in seconds for the monitor to run'
+	Interval  int            `gorm:"not null"` // Interval in seconds for the monitor to run
 	Config    datatypes.JSON `gorm:"type:jsonb"`
 
 	// Relationships
