@@ -17,6 +17,6 @@ type Monitor struct {
 	Config    datatypes.JSON `gorm:"type:jsonb"`
 
 	// Relationships
-	MonitorChecks []MonitorCheck `gorm:"foreignKey:MonitorID"`
-	Incidents     []Incident     `gorm:"foreignKey:MonitorID"`
+	MonitorChecks []MonitorCheck `gorm:"foreignKey:MonitorID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
+	Incidents     []Incident     `gorm:"foreignKey:MonitorID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 }

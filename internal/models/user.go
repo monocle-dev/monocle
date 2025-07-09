@@ -10,8 +10,8 @@ type User struct {
 	PasswordHash string `gorm:"not null"`
 
 	// Relationships
-	OwnedProjects      []Project           `gorm:"foreignKey:OwnerID"`
-	ProjectMemberships []ProjectMembership `gorm:"foreignKey:UserID"`
-	Notifications      []Notification      `gorm:"foreignKey:UserID"`
-	NotificationRules  []NotificationRule  `gorm:"foreignKey:UserID"`
+	OwnedProjects      []Project           `gorm:"foreignKey:OwnerID;constraint:OnUpdate:Cascade,OnDelete:SET NULL"`
+	ProjectMemberships []ProjectMembership `gorm:"foreignKey:UserID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
+	Notifications      []Notification      `gorm:"foreignKey:UserID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
+	NotificationRules  []NotificationRule  `gorm:"foreignKey:UserID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 }

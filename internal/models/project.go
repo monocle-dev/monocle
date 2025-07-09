@@ -10,8 +10,8 @@ type Project struct {
 	OwnerID     uint `gorm:"not null;index"`
 
 	// Relationships
-	Owner              User                `gorm:"foreignKey:OwnerID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
+	Owner              User                `gorm:"foreignKey:OwnerID;constraint:OnUpdate:Cascade,OnDelete:SET NULL"`
 	ProjectMemberships []ProjectMembership `gorm:"foreignKey:ProjectID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
-	Monitors           []Monitor           `gorm:"foreignKey:ProjectID"`
-	NotificationRules  []NotificationRule  `gorm:"foreignKey:ProjectID"`
+	Monitors           []Monitor           `gorm:"foreignKey:ProjectID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
+	NotificationRules  []NotificationRule  `gorm:"foreignKey:ProjectID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 }

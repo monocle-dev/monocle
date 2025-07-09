@@ -19,5 +19,5 @@ type Incident struct {
 
 	// Relationships
 	Monitor       Monitor        `gorm:"foreignKey:MonitorID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
-	Notifications []Notification `gorm:"foreignKey:IncidentID"`
+	Notifications []Notification `gorm:"foreignKey:IncidentID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
 }
