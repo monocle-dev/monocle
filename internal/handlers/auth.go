@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,7 @@ import (
 	"github.com/monocle-dev/monocle/internal/models"
 	"github.com/monocle-dev/monocle/internal/types"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type CreateUserRequest struct {
@@ -34,8 +36,16 @@ func CreateUser(ctx *gin.Context) {
 
 	var existingUser models.User
 
-	if err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
-		ctx.JSON(400, gin.H{"error": "User with this email already exists"})
+	err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error
+
+	if err == nil {
+		ctx.JSON(400, gin.H{"error": "Email already exists"})
+		return
+	}
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Printf("Database error when checking existing user: %v", err)
+		ctx.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -88,12 +98,21 @@ func LoginUser(ctx *gin.Context) {
 
 	var existingUser models.User
 
-	if err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error; err != nil {
-		ctx.JSON(400, gin.H{"error": "Invalid email or password"})
+	err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(400, gin.H{"error": "Invalid email or password"})
+			return
+		}
+		log.Printf("Database error when fetching user: %v", err)
+		ctx.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.PasswordHash), []byte(user.Password)); err != nil {
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.PasswordHash), []byte(user.Password))
+
+	if err != nil {
 		ctx.JSON(400, gin.H{"error": "Invalid email or password"})
 		return
 	}
