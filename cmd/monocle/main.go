@@ -6,6 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/monocle-dev/monocle/db"
+	"github.com/monocle-dev/monocle/internal/auth"
 	"github.com/monocle-dev/monocle/internal/router"
 )
 
@@ -30,6 +31,11 @@ func main() {
 
 	if err = db.MigrateDatabase(); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
+	// Initialize JWT secret
+	if err = auth.InitJWTSecret(); err != nil {
+		log.Fatalf("Failed to initialize JWT secret: %v", err)
 	}
 
 	r := router.NewRouter()

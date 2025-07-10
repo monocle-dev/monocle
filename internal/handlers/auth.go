@@ -1,15 +1,14 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
-	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/monocle-dev/monocle/db"
+	"github.com/monocle-dev/monocle/internal/auth"
+	"github.com/monocle-dev/monocle/internal/middleware"
 	"github.com/monocle-dev/monocle/internal/models"
+	"github.com/monocle-dev/monocle/internal/types"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,29 +21,6 @@ type CreateUserRequest struct {
 type LoginUserRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
-}
-
-type UserResponse struct {
-	ID    uint   `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-func generateJWT(userID uint, email string) (string, error) {
-	var jwtSecret = os.Getenv("JWT_SECRET")
-
-	if jwtSecret == "" {
-		return "", fmt.Errorf("JWT_SECRET environment variable is not set")
-	}
-
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"email":   email,
-		"exp":     time.Now().Add(time.Hour * 168).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(jwtSecret))
 }
 
 func CreateUser(ctx *gin.Context) {
@@ -83,7 +59,7 @@ func CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	token, err := generateJWT(newUser.ID, newUser.Email)
+	token, err := auth.GenerateJWT(newUser.ID, newUser.Email)
 
 	if err != nil {
 		log.Printf("Failed to generate JWT: %v", err)
@@ -92,7 +68,7 @@ func CreateUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(201, gin.H{
-		"user": UserResponse{
+		"user": types.UserResponse{
 			ID:    newUser.ID,
 			Name:  newUser.Name,
 			Email: newUser.Email,
@@ -122,7 +98,7 @@ func LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	token, err := generateJWT(existingUser.ID, existingUser.Email)
+	token, err := auth.GenerateJWT(existingUser.ID, existingUser.Email)
 
 	if err != nil {
 		log.Printf("Failed to generate JWT: %v", err)
@@ -131,7 +107,7 @@ func LoginUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, gin.H{
-		"user": UserResponse{
+		"user": types.UserResponse{
 			ID:    existingUser.ID,
 			Name:  existingUser.Name,
 			Email: existingUser.Email,
@@ -148,7 +124,7 @@ func GetCurrentUser(ctx *gin.Context) {
 		return
 	}
 
-	currentUser, ok := user.(UserResponse)
+	currentUser, ok := user.(middleware.AuthenticatedUser)
 
 	if !ok {
 		ctx.JSON(500, gin.H{"error": "Internal server error"})
@@ -156,6 +132,10 @@ func GetCurrentUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, gin.H{
-		"user": currentUser,
+		"user": types.UserResponse{
+			ID:    currentUser.ID,
+			Name:  currentUser.Name,
+			Email: currentUser.Email,
+		},
 	})
 }

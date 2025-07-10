@@ -1,15 +1,20 @@
 package middleware
 
 import (
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/monocle-dev/monocle/db"
-	"github.com/monocle-dev/monocle/internal/handlers"
+	"github.com/monocle-dev/monocle/internal/auth"
 	"github.com/monocle-dev/monocle/internal/models"
 )
+
+type AuthenticatedUser struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -30,21 +35,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		jwtSecret := os.Getenv("JWT_SECRET")
 
-		if jwtSecret == "" {
-			ctx.JSON(500, gin.H{"error": "JWT_SECRET environment variable is not set"})
-			ctx.Abort()
-			return
-		}
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-
-			return []byte(jwtSecret), nil
-		})
+		token, err := auth.VerifyJWT(tokenString)
 
 		if err != nil || !token.Valid {
 			ctx.JSON(401, gin.H{"error": "Invalid or expired token"})
@@ -78,7 +70,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set("user", handlers.UserResponse{
+		ctx.Set("user", AuthenticatedUser{
 			ID:    user.ID,
 			Name:  user.Name,
 			Email: user.Email,
