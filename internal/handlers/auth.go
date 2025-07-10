@@ -3,6 +3,8 @@ package handlers
 import (
 	"errors"
 	"log"
+	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/db"
@@ -30,22 +32,24 @@ func CreateUser(ctx *gin.Context) {
 
 	if err := ctx.BindJSON(&user); err != nil {
 		log.Printf("Failed to bind JSON: %v", err)
-		ctx.JSON(400, gin.H{"error": "Invalid request"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
+
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	var existingUser models.User
 
 	err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error
 
 	if err == nil {
-		ctx.JSON(400, gin.H{"error": "Email already exists"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
 		return
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Printf("Database error when checking existing user: %v", err)
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -53,7 +57,7 @@ func CreateUser(ctx *gin.Context) {
 
 	if err != nil {
 		log.Printf("Failed to hash password: %v", err)
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -65,7 +69,7 @@ func CreateUser(ctx *gin.Context) {
 
 	if err := db.DB.Create(&newUser).Error; err != nil {
 		log.Printf("Failed to create user: %v", err)
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -73,11 +77,11 @@ func CreateUser(ctx *gin.Context) {
 
 	if err != nil {
 		log.Printf("Failed to generate JWT: %v", err)
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	ctx.JSON(201, gin.H{
+	ctx.JSON(http.StatusCreated, gin.H{
 		"user": types.UserResponse{
 			ID:    newUser.ID,
 			Name:  newUser.Name,
@@ -92,7 +96,7 @@ func LoginUser(ctx *gin.Context) {
 
 	if err := ctx.BindJSON(&user); err != nil {
 		log.Printf("Failed to bind JSON: %v", err)
-		ctx.JSON(400, gin.H{"error": "Invalid request"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
@@ -102,18 +106,18 @@ func LoginUser(ctx *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.JSON(400, gin.H{"error": "Invalid email or password"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email or password"})
 			return
 		}
 		log.Printf("Database error when fetching user: %v", err)
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.PasswordHash), []byte(user.Password))
 
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": "Invalid email or password"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
@@ -121,11 +125,11 @@ func LoginUser(ctx *gin.Context) {
 
 	if err != nil {
 		log.Printf("Failed to generate JWT: %v", err)
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	ctx.JSON(200, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"user": types.UserResponse{
 			ID:    existingUser.ID,
 			Name:  existingUser.Name,
@@ -139,18 +143,18 @@ func GetCurrentUser(ctx *gin.Context) {
 	user, exists := ctx.Get("user")
 
 	if !exists {
-		ctx.JSON(401, gin.H{"error": "Unauthorized"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
 	currentUser, ok := user.(middleware.AuthenticatedUser)
 
 	if !ok {
-		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	ctx.JSON(200, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"user": types.UserResponse{
 			ID:    currentUser.ID,
 			Name:  currentUser.Name,

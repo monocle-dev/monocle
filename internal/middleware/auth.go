@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -8,6 +9,7 @@ import (
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/auth"
 	"github.com/monocle-dev/monocle/internal/models"
+	"github.com/monocle-dev/monocle/internal/types"
 )
 
 type AuthenticatedUser struct {
@@ -16,21 +18,22 @@ type AuthenticatedUser struct {
 	Email string `json:"email"`
 }
 
+const ContextUserKey = "user"
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 
 		if authHeader == "" {
-			ctx.JSON(401, gin.H{"error": "Authorization token is required"})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			ctx.JSON(401, gin.H{"error": "Invalid authorization header"})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
+
 			return
 		}
 
@@ -39,24 +42,21 @@ func AuthMiddleware() gin.HandlerFunc {
 		token, err := auth.VerifyJWT(tokenString)
 
 		if err != nil || !token.Valid {
-			ctx.JSON(401, gin.H{"error": "Invalid or expired token"})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 
 		if !ok {
-			ctx.JSON(401, gin.H{"error": "Invalid token claims"})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 			return
 		}
 
 		userIDFloat, ok := claims["user_id"].(float64)
 
 		if !ok {
-			ctx.JSON(401, gin.H{"error": "Invalid user ID in token claims"})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token claims"})
 			return
 		}
 
@@ -65,12 +65,11 @@ func AuthMiddleware() gin.HandlerFunc {
 		var user models.User
 
 		if err := db.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-			ctx.JSON(401, gin.H{"error": "User not found"})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			return
 		}
 
-		ctx.Set("user", AuthenticatedUser{
+		ctx.Set(types.ContextUserKey, AuthenticatedUser{
 			ID:    user.ID,
 			Name:  user.Name,
 			Email: user.Email,
