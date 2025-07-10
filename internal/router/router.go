@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/internal/handlers"
+	"github.com/monocle-dev/monocle/internal/middleware"
 )
 
 func NewRouter() *gin.Engine {
@@ -16,7 +17,7 @@ func NewRouter() *gin.Engine {
 		{
 			auth.POST("/register", handlers.CreateUser)
 			auth.POST("/login", handlers.LoginUser)
-
+			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetCurrentUser)
 		}
 	}
 

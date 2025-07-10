@@ -136,3 +136,23 @@ func LoginUser(ctx *gin.Context) {
 		"token": token,
 	})
 }
+
+func GetCurrentUser(ctx *gin.Context) {
+	user, exists := ctx.Get("user")
+
+	if !exists {
+		ctx.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	currentUser, ok := user.(UserResponse)
+
+	if !ok {
+		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"user": currentUser,
+	})
+}
