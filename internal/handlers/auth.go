@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -33,7 +34,7 @@ func generateJWT(userID uint, email string) (string, error) {
 	var jwtSecret = os.Getenv("JWT_SECRET")
 
 	if jwtSecret == "" {
-		log.Fatal("JWT_SECRET environment variable is not set")
+		return "", fmt.Errorf("JWT_SECRET environment variable is not set")
 	}
 
 	claims := jwt.MapClaims{
@@ -50,7 +51,9 @@ func CreateUser(ctx *gin.Context) {
 	var user CreateUserRequest
 
 	if err := ctx.BindJSON(&user); err != nil {
-		log.Fatalf("Failed to bind JSON: %v", err)
+		log.Printf("Failed to bind JSON: %v", err)
+		ctx.JSON(400, gin.H{"error": "Invalid request"})
+		return
 	}
 
 	var existingUser models.User
@@ -63,7 +66,7 @@ func CreateUser(ctx *gin.Context) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 
 	if err != nil {
-		log.Fatalf("Failed to hash password: %v", err)
+		log.Printf("Failed to hash password: %v", err)
 		ctx.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
@@ -75,7 +78,7 @@ func CreateUser(ctx *gin.Context) {
 	}
 
 	if err := db.DB.Create(&newUser).Error; err != nil {
-		log.Fatalf("Failed to create user: %v", err)
+		log.Printf("Failed to create user: %v", err)
 		ctx.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
@@ -83,7 +86,7 @@ func CreateUser(ctx *gin.Context) {
 	token, err := generateJWT(newUser.ID, newUser.Email)
 
 	if err != nil {
-		log.Fatalf("Failed to generate JWT: %v", err)
+		log.Printf("Failed to generate JWT: %v", err)
 		ctx.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
@@ -102,7 +105,7 @@ func LoginUser(ctx *gin.Context) {
 	var user LoginUserRequest
 
 	if err := ctx.BindJSON(&user); err != nil {
-		log.Fatalf("Failed to bind JSON: %v", err)
+		log.Printf("Failed to bind JSON: %v", err)
 		ctx.JSON(400, gin.H{"error": "Invalid request"})
 		return
 	}
@@ -122,7 +125,7 @@ func LoginUser(ctx *gin.Context) {
 	token, err := generateJWT(existingUser.ID, existingUser.Email)
 
 	if err != nil {
-		log.Fatalf("Failed to generate JWT: %v", err)
+		log.Printf("Failed to generate JWT: %v", err)
 		ctx.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
