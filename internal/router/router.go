@@ -15,6 +15,8 @@ func NewRouter() *gin.Engine {
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", handlers.CreateUser)
+			auth.POST("/login", handlers.LoginUser)
+
 		}
 	}
 

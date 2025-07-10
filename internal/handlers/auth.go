@@ -18,6 +18,11 @@ type CreateUserRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
+type LoginUserRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+}
+
 type UserResponse struct {
 	ID    uint   `json:"id"`
 	Name  string `json:"name"`
@@ -88,6 +93,45 @@ func CreateUser(ctx *gin.Context) {
 			ID:    newUser.ID,
 			Name:  newUser.Name,
 			Email: newUser.Email,
+		},
+		"token": token,
+	})
+}
+
+func LoginUser(ctx *gin.Context) {
+	var user LoginUserRequest
+
+	if err := ctx.BindJSON(&user); err != nil {
+		log.Fatalf("Failed to bind JSON: %v", err)
+		ctx.JSON(400, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	var existingUser models.User
+
+	if err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error; err != nil {
+		ctx.JSON(400, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.PasswordHash), []byte(user.Password)); err != nil {
+		ctx.JSON(400, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
+	token, err := generateJWT(existingUser.ID, existingUser.Email)
+
+	if err != nil {
+		log.Fatalf("Failed to generate JWT: %v", err)
+		ctx.JSON(500, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"user": UserResponse{
+			ID:    existingUser.ID,
+			Name:  existingUser.Name,
+			Email: existingUser.Email,
 		},
 		"token": token,
 	})
