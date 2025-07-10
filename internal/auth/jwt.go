@@ -19,12 +19,6 @@ func InitJWTSecret() error {
 }
 
 func GenerateJWT(userID uint, email string) (string, error) {
-	var jwtSecret = os.Getenv("JWT_SECRET")
-
-	if jwtSecret == "" {
-		return "", fmt.Errorf("JWT_SECRET environment variable is not set")
-	}
-
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"email":   email,
@@ -36,10 +30,6 @@ func GenerateJWT(userID uint, email string) (string, error) {
 }
 
 func VerifyJWT(tokenString string) (*jwt.Token, error) {
-	if jwtSecret == "" {
-		return nil, fmt.Errorf("JWT_SECRET environment variable is not set")
-	}
-
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
