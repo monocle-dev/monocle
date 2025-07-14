@@ -81,13 +81,22 @@ func CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetCookie(
+		"token",    // cookie name
+		token,      // value
+		60*60*24*7, // maxAge (7 days in seconds)
+		"/",        // path
+		"",         // domain (empty = current domain)
+		true,       // secure (set to true in production with HTTPS)
+		true,       // httpOnly
+	)
+
 	ctx.JSON(http.StatusCreated, gin.H{
 		"user": types.UserResponse{
 			ID:    newUser.ID,
 			Name:  newUser.Name,
 			Email: newUser.Email,
 		},
-		"token": token,
 	})
 }
 
@@ -129,13 +138,22 @@ func LoginUser(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetCookie(
+		"token",    // cookie name
+		token,      // value
+		60*60*24*7, // maxAge (7 days in seconds)
+		"/",        // path
+		"",         // domain (empty = current domain)
+		true,       // secure (set to true in production with HTTPS)
+		true,       // httpOnly
+	)
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"user": types.UserResponse{
 			ID:    existingUser.ID,
 			Name:  existingUser.Name,
 			Email: existingUser.Email,
 		},
-		"token": token,
 	})
 }
 

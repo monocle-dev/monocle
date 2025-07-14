@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -22,24 +21,14 @@ const ContextUserKey = "user"
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authHeader := ctx.GetHeader("Authorization")
+		cookie, err := ctx.Cookie("token")
 
-		if authHeader == "" {
+		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
 			return
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
-
-			return
-		}
-
-		tokenString := parts[1]
-
-		token, err := auth.VerifyJWT(tokenString)
+		token, err := auth.VerifyJWT(cookie)
 
 		if err != nil || !token.Valid {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
