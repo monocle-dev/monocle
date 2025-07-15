@@ -19,6 +19,14 @@ func NewRouter() *gin.Engine {
 			auth.POST("/login", handlers.LoginUser)
 			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetCurrentUser)
 		}
+
+		projects := api.Group("/projects", middleware.AuthMiddleware())
+		{
+			projects.POST("/", handlers.CreateProject)
+			projects.GET("/", handlers.ListProjects)
+			projects.PATCH("/:id", handlers.UpdateProject)
+			projects.DELETE("/:id", handlers.DeleteProject)
+		}
 	}
 
 	return r
