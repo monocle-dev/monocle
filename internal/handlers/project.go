@@ -83,16 +83,13 @@ func ListProjects(ctx *gin.Context) {
 	}
 
 	var response []GetProjectResponse
+
 	for _, project := range projects {
 		response = append(response, GetProjectResponse{
 			ID:          project.ID,
 			Name:        project.Name,
 			Description: project.Description,
 			OwnerID:     project.OwnerID,
-			// IsOwner:     true,
-			// Role:        "owner",
-			// MemberCount: 1,
-			// TODO: Come back to this when implementing project memberships
 		})
 	}
 
@@ -171,5 +168,5 @@ func DeleteProject(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusNoContent, gin.H{})
+	ctx.Status(http.StatusNoContent)
 }
