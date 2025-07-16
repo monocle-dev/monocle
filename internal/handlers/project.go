@@ -73,7 +73,7 @@ func ListProjects(ctx *gin.Context) {
 
 	var projects []models.Project
 
-	if err := db.DB.Where("owner_id = ?", userID).Find(&projects).Error; err != nil {
+	if err := db.DB.Select("id, name, description, owner_id").Where("owner_id = ?", userID).Find(&projects).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve projects"})
 		return
 	}
