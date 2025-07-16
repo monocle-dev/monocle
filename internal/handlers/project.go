@@ -6,9 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/db"
-	"github.com/monocle-dev/monocle/internal/middleware"
 	"github.com/monocle-dev/monocle/internal/models"
-	"github.com/monocle-dev/monocle/internal/types"
+	"github.com/monocle-dev/monocle/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -37,14 +36,12 @@ func CreateProject(ctx *gin.Context) {
 		return
 	}
 
-	user, exists := ctx.Get(types.ContextUserKey)
+	userID, err := utils.GetCurrentUserID(ctx)
 
-	if !exists {
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-
-	userID := user.(middleware.AuthenticatedUser).ID
 
 	project := models.Project{
 		Name:        body.Name,
@@ -66,14 +63,12 @@ func CreateProject(ctx *gin.Context) {
 }
 
 func ListProjects(ctx *gin.Context) {
-	user, exists := ctx.Get(types.ContextUserKey)
+	userID, err := utils.GetCurrentUserID(ctx)
 
-	if !exists {
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-
-	userID := user.(middleware.AuthenticatedUser).ID
 
 	var projects []models.Project
 
@@ -97,9 +92,9 @@ func ListProjects(ctx *gin.Context) {
 }
 
 func UpdateProject(ctx *gin.Context) {
-	user, exists := ctx.Get(types.ContextUserKey)
+	userID, err := utils.GetCurrentUserID(ctx)
 
-	if !exists {
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
@@ -110,8 +105,6 @@ func UpdateProject(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-
-	userID := user.(middleware.AuthenticatedUser).ID
 
 	var project models.Project
 	projectID := ctx.Param("id")
@@ -145,14 +138,12 @@ func DeleteProject(ctx *gin.Context) {
 	var project models.Project
 	projectID := ctx.Param("id")
 
-	user, exists := ctx.Get(types.ContextUserKey)
+	userID, err := utils.GetCurrentUserID(ctx)
 
-	if !exists {
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-
-	userID := user.(middleware.AuthenticatedUser).ID
 
 	if err := db.DB.Where("id = ? AND owner_id = ?", projectID, userID).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
