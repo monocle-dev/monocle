@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/db"
@@ -77,7 +78,7 @@ func ListProjects(ctx *gin.Context) {
 		return
 	}
 
-	var response []GetProjectResponse
+	response := make([]GetProjectResponse, 0, len(projects))
 
 	for _, project := range projects {
 		response = append(response, GetProjectResponse{
@@ -107,7 +108,14 @@ func UpdateProject(ctx *gin.Context) {
 	}
 
 	var project models.Project
-	projectID := ctx.Param("id")
+
+	projectIDStr := ctx.Param("id")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
 
 	if err := db.DB.Where("id = ? AND owner_id = ?", projectID, userID).First(&project).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -136,7 +144,14 @@ func UpdateProject(ctx *gin.Context) {
 
 func DeleteProject(ctx *gin.Context) {
 	var project models.Project
-	projectID := ctx.Param("id")
+	projectIDStr := ctx.Param("id")
+
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
 
 	userID, err := utils.GetCurrentUserID(ctx)
 
