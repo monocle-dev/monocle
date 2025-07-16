@@ -9,9 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/auth"
-	"github.com/monocle-dev/monocle/internal/middleware"
 	"github.com/monocle-dev/monocle/internal/models"
 	"github.com/monocle-dev/monocle/internal/types"
+	"github.com/monocle-dev/monocle/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -157,18 +157,11 @@ func LoginUser(ctx *gin.Context) {
 	})
 }
 
-func GetCurrentUser(ctx *gin.Context) {
-	user, exists := ctx.Get("user")
+func Me(ctx *gin.Context) {
+	currentUser, err := utils.GetCurrentUser(ctx)
 
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	currentUser, ok := user.(middleware.AuthenticatedUser)
-
-	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 

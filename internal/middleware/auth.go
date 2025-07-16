@@ -17,8 +17,6 @@ type AuthenticatedUser struct {
 	Email string `json:"email"`
 }
 
-const ContextUserKey = "user"
-
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		cookie, err := ctx.Cookie("token")
