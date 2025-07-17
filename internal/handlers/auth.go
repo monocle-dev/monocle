@@ -173,3 +173,8 @@ func Me(ctx *gin.Context) {
 		},
 	})
 }
+
+func LogoutUser(ctx *gin.Context) {
+	ctx.SetCookie("token", "", -1, "/", "", true, true)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
