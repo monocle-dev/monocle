@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
 
 	"github.com/joho/godotenv"
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/auth"
 	"github.com/monocle-dev/monocle/internal/router"
+	"github.com/monocle-dev/monocle/internal/scheduler"
 )
 
 func main() {
@@ -38,6 +40,10 @@ func main() {
 		log.Fatalf("Failed to initialize JWT secret: %v", err)
 	}
 
+	if err = scheduler.Initialize(); err != nil {
+		log.Fatalf("Failed to initialize scheduler: %v", err)
+	}
+
 	r := router.NewRouter()
 
 	var port string
@@ -47,7 +53,17 @@ func main() {
 		log.Println("PORT not set, defaulting to 3000")
 	}
 
-	if err = r.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+	// Setup graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+
+	go func() {
+		if err = r.Run(":" + port); err != nil {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	<-quit
+	log.Println("Shutting down server...")
+	scheduler.Shutdown()
 }

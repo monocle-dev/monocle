@@ -24,8 +24,13 @@ func NewRouter() *gin.Engine {
 		{
 			projects.POST("", handlers.CreateProject)
 			projects.GET("", handlers.ListProjects)
-			projects.PATCH("/:id", handlers.UpdateProject)
-			projects.DELETE("/:id", handlers.DeleteProject)
+			projects.PATCH("/:project_id", handlers.UpdateProject)
+			projects.DELETE("/:project_id", handlers.DeleteProject)
+
+			projects.POST("/:project_id/monitors", handlers.CreateMonitor)
+			projects.GET("/:project_id/monitors", handlers.GetMonitors)
+			projects.GET("/:project_id/monitors/:monitor_id/checks", handlers.GetMonitorChecks)
+			projects.DELETE("/:project_id/monitors/:monitor_id", handlers.DeleteMonitor)
 		}
 	}
 

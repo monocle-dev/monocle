@@ -109,7 +109,7 @@ func UpdateProject(ctx *gin.Context) {
 
 	var project models.Project
 
-	projectIDStr := ctx.Param("id")
+	projectIDStr := ctx.Param("project_id")
 	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
 
 	if err != nil {
@@ -144,7 +144,7 @@ func UpdateProject(ctx *gin.Context) {
 
 func DeleteProject(ctx *gin.Context) {
 	var project models.Project
-	projectIDStr := ctx.Param("id")
+	projectIDStr := ctx.Param("project_id")
 
 	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
 
