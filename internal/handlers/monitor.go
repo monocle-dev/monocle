@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
@@ -153,9 +154,7 @@ func DeleteMonitor(ctx *gin.Context) {
 
 	var monitor models.Monitor
 
-	if err := db.DB.Where("id = ? AND project_id = ? AND project.owner_id = ?", monitorID, projectID, userID).
-		Joins("JOIN projects ON projects.id = monitors.project_id").
-		First(&monitor).Error; err != nil {
+	if err := db.DB.Joins("JOIN projects ON projects.id = monitors.project_id").Where("monitors.id = ? AND monitors.project_id = ? AND projects.owner_id = ?", monitorID, projectID, userID).First(&monitor).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Monitor not found"})
 		} else {
@@ -325,6 +324,7 @@ func buildMonitorSummary(monitor models.Monitor) (MonitorSummary, error) {
 		Order("checked_at DESC").
 		First(&lastCheck).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("Error fetching last check for monitor %d: %v", monitor.ID, err)
 			return MonitorSummary{}, err
 		}
 		lastCheckFound = false
@@ -387,14 +387,18 @@ func calculateUptime(monitorID uint) float64 {
 }
 
 func calculateAverageResponseTime(monitorID uint) float64 {
-	var avg float64
+	var avg sql.NullFloat64
 
 	db.DB.Model(&models.MonitorCheck{}).
 		Select("AVG(response_time)").
 		Where("monitor_id = ? AND status = 'success' AND checked_at > ?", monitorID, time.Now().Add(-24*time.Hour)).
 		Scan(&avg)
 
-	return avg
+	if avg.Valid {
+		return avg.Float64
+	}
+
+	return 0
 }
 
 func GetDashboard(ctx *gin.Context) {
