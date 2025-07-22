@@ -144,6 +144,15 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 			return
 		}
 		err = monitors.GetHTTP(&cfg)
+	case "dns":
+		var cfg types.DNSConfig
+
+		if unmarshalErr := json.Unmarshal(monitor.Config, &cfg); unmarshalErr != nil {
+			log.Printf("Invalid config for monitor %d: %v", monitor.ID, unmarshalErr)
+			return
+		}
+
+		err = monitors.CheckDNS(&cfg)
 	default:
 		log.Printf("Unsupported monitor type: %s", monitor.Type)
 		return
