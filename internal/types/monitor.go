@@ -14,4 +14,3 @@ type DNSConfig struct {
 	Expected   string `json:"expected"`    // Expected IP/value (optional)
 	Timeout    int    `json:"timeout"`     // Timeout in seconds
 }
-

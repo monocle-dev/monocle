@@ -93,10 +93,15 @@ func (s *Scheduler) AddMonitor(monitor models.Monitor) {
 
 	s.monitors[monitor.ID] = job
 
-	// Start the monitoring goroutine
-	go s.runMonitor(jobCtx, job)
+	// Start the monitoring goroutine with immediate check
+	go func() {
+		// Execute immediate check
+		s.executeCheck(monitor)
+		// Then start regular monitoring
+		s.runMonitor(jobCtx, job)
+	}()
 
-	log.Printf("Added monitor %d (%s)", monitor.ID, monitor.Name)
+	log.Printf("Added monitor %d (%s) with immediate check", monitor.ID, monitor.Name)
 }
 
 // RemoveMonitor stops monitoring for a specific monitor
