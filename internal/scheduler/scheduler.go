@@ -192,7 +192,7 @@ func (s *Scheduler) storeCheckResult(monitorID uint, err error, responseTime tim
 	}
 
 	if dbErr := db.DB.Create(&check).Error; dbErr != nil {
-		log.Printf("Failed to store check result: %v", dbErr)
+		log.Printf("Failed to store check result for monitor %d: %v", monitorID, dbErr)
 	}
 }
 

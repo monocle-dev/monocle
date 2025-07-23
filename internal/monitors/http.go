@@ -24,11 +24,7 @@ func GetHTTP(config *types.HttpConfig) error {
 		req.Header.Add(key, value)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Timeout)*time.Second)
-
-	defer cancel()
-
-	req = req.WithContext(ctx)
+	req = req.WithContext(context.Background())
 
 	resp, err := client.Do(req)
 

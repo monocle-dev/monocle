@@ -75,7 +75,7 @@ func checkAAAARecord(ctx context.Context, resolver *net.Resolver, config *types.
 	ips, err := resolver.LookupIPAddr(ctx, config.Domain)
 
 	if err != nil {
-		return fmt.Errorf("failed to resolve AAAA record for: %s: %v", config.Domain, err)
+		return fmt.Errorf("failed to resolve AAAA record for %s: %v", config.Domain, err)
 	}
 
 	var ipv6Found bool

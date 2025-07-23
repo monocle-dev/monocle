@@ -22,7 +22,7 @@ func GetProjectID(ctx *gin.Context) (uint64, error) {
 		return 0, errors.New("Invalid Project ID")
 	}
 
-	return projectID, err
+	return projectID, nil
 }
 
 func GetMonitorID(ctx *gin.Context) (uint64, error) {
