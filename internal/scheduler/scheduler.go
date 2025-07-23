@@ -158,6 +158,15 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 		}
 
 		err = monitors.CheckDNS(&cfg)
+	case "database":
+		var cfg types.DatabaseConfig
+
+		if unmarshalErr := json.Unmarshal(monitor.Config, &cfg); unmarshalErr != nil {
+			log.Printf("Invalid config for monitor %d: %v", monitor.ID, unmarshalErr)
+			return
+		}
+
+		err = monitors.CheckDatabase(&cfg)
 	default:
 		log.Printf("Unsupported monitor type: %s", monitor.Type)
 		return
