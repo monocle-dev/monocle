@@ -199,13 +199,13 @@ func DeleteMonitor(ctx *gin.Context) {
 	// Remove monitor from scheduler
 	scheduler.RemoveMonitor(monitor.ID)
 
-	ctx.JSON(http.StatusNoContent, gin.H{"message": "Monitor deleted successfully"})
+	ctx.Status(http.StatusNoContent)
 }
 
 func GetMonitors(ctx *gin.Context) {
 	projectIDStr := ctx.Param("project_id")
 
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Project ID"})
 		return
@@ -251,13 +251,13 @@ func GetMonitorChecks(ctx *gin.Context) {
 	projectIDStr := ctx.Param("project_id")
 	monitorIDStr := ctx.Param("monitor_id")
 
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Project ID"})
 		return
 	}
 
-	monitorID, err := strconv.ParseUint(monitorIDStr, 10, 32)
+	monitorID, err := strconv.ParseUint(monitorIDStr, 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Monitor ID"})
 		return
@@ -460,7 +460,7 @@ func calculateAverageResponseTime(monitorID uint) float64 {
 func GetDashboard(ctx *gin.Context) {
 	projectIDStr := ctx.Param("project_id")
 
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Project ID"})
 		return

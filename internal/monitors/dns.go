@@ -156,7 +156,7 @@ func checkTXTRecord(ctx context.Context, resolver *net.Resolver, config *types.D
 
 	if config.Expected != "" {
 		for _, txt := range txtRecords {
-			if strings.Contains(txt, config.Expected) {
+			if txt == config.Expected {
 				return nil
 			}
 		}

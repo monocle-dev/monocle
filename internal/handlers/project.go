@@ -111,7 +111,7 @@ func UpdateProject(ctx *gin.Context) {
 	var project models.Project
 
 	projectIDStr := ctx.Param("project_id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
@@ -147,7 +147,7 @@ func DeleteProject(ctx *gin.Context) {
 	var project models.Project
 	projectIDStr := ctx.Param("project_id")
 
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})

@@ -18,7 +18,7 @@ func GetProjectID(ctx *gin.Context) (uint64, error) {
 		return 0, errors.New("Project ID not found")
 	}
 
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 
 	if err != nil {
 		return 0, errors.New("Invalid Project ID")
@@ -36,7 +36,7 @@ func GetMonitorID(ctx *gin.Context) (uint64, error) {
 		return 0, errors.New("Monitor ID not found")
 	}
 
-	monitorID, err := strconv.ParseUint(monitorIDStr, 10, 32)
+	monitorID, err := strconv.ParseUint(monitorIDStr, 10, 64)
 
 	if err != nil {
 		return 0, errors.New("Invalid Monitor ID")
