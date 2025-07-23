@@ -95,8 +95,9 @@ func (s *Scheduler) AddMonitor(monitor models.Monitor) {
 
 	// Start the monitoring goroutine with immediate check
 	go func() {
-		// Execute immediate check
-		s.executeCheck(monitor)
+		// Execute immediate check with a copy of monitor data
+		monitorCopy := monitor
+		s.executeCheck(monitorCopy)
 		// Then start regular monitoring
 		s.runMonitor(jobCtx, job)
 	}()
@@ -131,7 +132,12 @@ func (s *Scheduler) runMonitor(ctx context.Context, job *MonitorJob) {
 		case <-ctx.Done():
 			return
 		case <-job.ticker.C:
-			s.executeCheck(job.monitor)
+			// Get a safe copy of the monitor data under read lock
+			s.mu.RLock()
+			monitorCopy := job.monitor
+			s.mu.RUnlock()
+
+			s.executeCheck(monitorCopy)
 		}
 	}
 }

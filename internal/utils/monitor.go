@@ -42,7 +42,7 @@ func GetMonitorID(ctx *gin.Context) (uint64, error) {
 		return 0, errors.New("Invalid Monitor ID")
 	}
 
-	return monitorID, err
+	return monitorID, nil
 }
 
 func GetProjectMonitorID(ctx *gin.Context) (uint64, uint64, error) {
