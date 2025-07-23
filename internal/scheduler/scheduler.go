@@ -164,8 +164,6 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 	}
 
 	responseTime := time.Since(start)
-
-	// Store the result (you should implement this)
 	s.storeCheckResult(monitor.ID, err, responseTime)
 
 	if err != nil {
