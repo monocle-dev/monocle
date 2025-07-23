@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/models"
+	"github.com/monocle-dev/monocle/internal/scheduler"
 	"github.com/monocle-dev/monocle/internal/utils"
 	"gorm.io/gorm"
 )
@@ -169,8 +170,49 @@ func DeleteProject(ctx *gin.Context) {
 		return
 	}
 
-	if err := db.DB.Delete(&project).Error; err != nil {
+	tx := db.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Get all monitors for this project to stop them from scheduler
+	var monitors []models.Monitor
+	if err := tx.Where("project_id = ?", projectID).Find(&monitors).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve monitors"})
+		return
+	}
+
+	// Stop all monitors from scheduler
+	for _, monitor := range monitors {
+		scheduler.RemoveMonitor(monitor.ID)
+	}
+
+	// Delete all monitor checks for monitors in this project
+	if err := tx.Where("monitor_id IN (SELECT id FROM monitors WHERE project_id = ?)", projectID).Delete(&models.MonitorCheck{}).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete monitor checks"})
+		return
+	}
+
+	// Delete all monitors for this project
+	if err := tx.Where("project_id = ?", projectID).Delete(&models.Monitor{}).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete monitors"})
+		return
+	}
+
+	// Delete the project itself
+	if err := tx.Delete(&project).Error; err != nil {
+		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete project"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit deletion"})
 		return
 	}
 
