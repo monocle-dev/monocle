@@ -145,7 +145,7 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 	case "http":
 		var cfg types.HttpConfig
 		if unmarshalErr := json.Unmarshal(monitor.Config, &cfg); unmarshalErr != nil {
-			log.Printf("Invalid config for monitor %d: %v", monitor.ID, unmarshalErr)
+			log.Printf("Invalid HTTP config for monitor %d: %v", monitor.ID, unmarshalErr)
 			return
 		}
 		err = monitors.GetHTTP(&cfg)
@@ -153,7 +153,7 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 		var cfg types.DNSConfig
 
 		if unmarshalErr := json.Unmarshal(monitor.Config, &cfg); unmarshalErr != nil {
-			log.Printf("Invalid config for monitor %d: %v", monitor.ID, unmarshalErr)
+			log.Printf("Invalid DNS config for monitor %d: %v", monitor.ID, unmarshalErr)
 			return
 		}
 
@@ -162,7 +162,7 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 		var cfg types.DatabaseConfig
 
 		if unmarshalErr := json.Unmarshal(monitor.Config, &cfg); unmarshalErr != nil {
-			log.Printf("Invalid config for monitor %d: %v", monitor.ID, unmarshalErr)
+			log.Printf("Invalid Database config for monitor %d: %v", monitor.ID, unmarshalErr)
 			return
 		}
 

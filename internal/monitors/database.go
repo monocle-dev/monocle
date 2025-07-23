@@ -27,10 +27,10 @@ func CheckDatabase(config *types.DatabaseConfig) error {
 
 	switch config.Type {
 	case "postgres", "postgresql":
-		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", config.Host, config.Port, config.Username, config.Password, config.Database, config.SSLMode)
+		dsn = fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", config.Host, config.Port, config.Username, config.Database, config.SSLMode)
 	case "mysql":
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-			config.Username, config.Password, config.Host, config.Port, config.Database)
+		dsn = fmt.Sprintf("%s@tcp(%s:%d)/%s",
+			config.Username, config.Host, config.Port, config.Database)
 	default:
 		return fmt.Errorf("unsupported database type: %s", config.Type)
 	}
