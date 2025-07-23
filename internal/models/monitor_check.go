@@ -16,5 +16,5 @@ type MonitorCheck struct {
 	CheckedAt    time.Time `gorm:"not null"`
 
 	// Relationships
-	Monitor Monitor `gorm:"foreignKey:MonitorID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
+	Monitor Monitor `gorm:"foreignKey:MonitorID;constraint:OnUpdate:Cascade,OnDelete:CASCADE" json:"-"`
 }
