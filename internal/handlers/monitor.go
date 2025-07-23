@@ -118,6 +118,34 @@ func CreateMonitor(ctx *gin.Context) {
 		return
 	}
 
+	// Validate and clean DNS monitor config
+	if req.Type == "dns" {
+		var dnsConfig map[string]interface{}
+		if err := json.Unmarshal(configJSON, &dnsConfig); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid DNS config format"})
+			return
+		}
+
+		// Extract and clean the domain
+		if domainValue, exists := dnsConfig["domain"]; exists {
+			if domainStr, ok := domainValue.(string); ok {
+				cleanDomain, err := utils.ExtractRawDomain(domainStr)
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid domain: " + err.Error()})
+					return
+				}
+				dnsConfig["domain"] = cleanDomain
+
+				// Re-marshal the cleaned config
+				configJSON, err = json.Marshal(dnsConfig)
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process DNS config"})
+					return
+				}
+			}
+		}
+	}
+
 	monitor := models.Monitor{
 		ProjectID: uint(projectID),
 		Name:      req.Name,
@@ -302,6 +330,34 @@ func UpdateMonitor(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid config format"})
 		return
+	}
+
+	// Validate and clean DNS monitor config
+	if req.Type == "dns" {
+		var dnsConfig map[string]interface{}
+		if err := json.Unmarshal(configJSON, &dnsConfig); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid DNS config format"})
+			return
+		}
+
+		// Extract and clean the domain
+		if domainValue, exists := dnsConfig["domain"]; exists {
+			if domainStr, ok := domainValue.(string); ok {
+				cleanDomain, err := utils.ExtractRawDomain(domainStr)
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid domain: " + err.Error()})
+					return
+				}
+				dnsConfig["domain"] = cleanDomain
+
+				// Re-marshal the cleaned config
+				configJSON, err = json.Marshal(dnsConfig)
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process DNS config"})
+					return
+				}
+			}
+		}
 	}
 
 	monitor.Config = configJSON
