@@ -90,7 +90,7 @@ func CreateMonitor(ctx *gin.Context) {
 	projectID, err := utils.GetProjectID(ctx)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -176,7 +176,7 @@ func DeleteMonitor(ctx *gin.Context) {
 	projectID, monitorID, err := utils.GetProjectMonitorID(ctx)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -302,7 +302,7 @@ func UpdateMonitor(ctx *gin.Context) {
 	projectID, monitorID, err := utils.GetProjectMonitorID(ctx)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
