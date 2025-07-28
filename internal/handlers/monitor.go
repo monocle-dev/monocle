@@ -72,11 +72,13 @@ type MonitorsSummary struct {
 }
 
 type IncidentSummary struct {
-	ID          uint      `json:"id"`
-	MonitorName string    `json:"monitor_name"`
-	Severity    string    `json:"severity"`
-	Status      string    `json:"status"`
-	StartedAt   time.Time `json:"started_at"`
+	ID          uint       `json:"id"`
+	MonitorName string     `json:"monitor_name"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Status      string     `json:"status"`
+	StartedAt   time.Time  `json:"started_at"`
+	ResolvedAt  *time.Time `json:"resolved_at"` // Change to pointer
 }
 
 func CreateMonitor(ctx *gin.Context) {
@@ -150,7 +152,7 @@ func CreateMonitor(ctx *gin.Context) {
 		ProjectID: uint(projectID),
 		Name:      req.Name,
 		Type:      req.Type,
-		Status:    "active",
+		Status:    "Active",
 		Interval:  req.Interval,
 		Config:    configJSON,
 	}
@@ -535,9 +537,11 @@ func GetDashboard(ctx *gin.Context) {
 		incidentSummaries = append(incidentSummaries, IncidentSummary{
 			ID:          incident.ID,
 			MonitorName: monitor.Name,
-			Severity:    incident.Severity,
+			Title:       incident.Title,
+			Description: incident.Description,
 			Status:      incident.Status,
 			StartedAt:   startedAt,
+			ResolvedAt:  incident.ResolvedAt,
 		})
 	}
 
