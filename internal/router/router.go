@@ -49,11 +49,6 @@ func NewRouter() *gin.Engine {
 			projects.PUT("/:project_id/monitors/:monitor_id", handlers.UpdateMonitor)
 			projects.GET("/:project_id/monitors/:monitor_id/checks", handlers.GetMonitorChecks)
 			projects.DELETE("/:project_id/monitors/:monitor_id", handlers.DeleteMonitor)
-
-			// Incident endpoints
-			projects.GET("/:project_id/incidents", handlers.GetIncidents)
-			projects.GET("/:project_id/incidents/active", handlers.GetActiveIncidents)
-			projects.GET("/:project_id/incidents/:incident_id", handlers.GetIncident)
 		}
 	}
 
