@@ -2,16 +2,15 @@ package models
 
 import (
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type Monitor struct {
-	gorm.Model
+	BaseModel
 
 	ProjectID uint           `gorm:"not null;index"` // Foreign key to the Project
 	Name      string         `gorm:"not null"`
 	Type      string         `gorm:"not null"` // "http", "ping", "database", etc.
-	Status    string         `gorm:"not null"` // "active", "inactive", "error", etc.
+	Status    string         `gorm:"not null"` // "Active", "Inactive", "Error", etc.
 	Interval  int            `gorm:"not null"` // Interval in seconds for the monitor to run
 	Config    datatypes.JSON `gorm:"type:jsonb"`
 

@@ -2,12 +2,10 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Notification struct {
-	gorm.Model
+	BaseModel
 
 	IncidentID uint   `gorm:"not null;index"`
 	UserID     uint   `gorm:"not null;index"`
