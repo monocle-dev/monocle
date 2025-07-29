@@ -10,7 +10,7 @@ type Monitor struct {
 	ProjectID uint           `gorm:"not null;index"` // Foreign key to the Project
 	Name      string         `gorm:"not null"`
 	Type      string         `gorm:"not null"` // "http", "ping", "database", etc.
-	Status    string         `gorm:"not null"` // "Active", "Inactive", "Error", etc.
+	Status    string         `gorm:"not null"` // "active", "inactive", "error", etc.
 	Interval  int            `gorm:"not null"` // Interval in seconds for the monitor to run
 	Config    datatypes.JSON `gorm:"type:jsonb"`
 

@@ -12,6 +12,7 @@ import (
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/models"
 	"github.com/monocle-dev/monocle/internal/monitors"
+	"github.com/monocle-dev/monocle/internal/services"
 	"github.com/monocle-dev/monocle/internal/types"
 	"gorm.io/gorm"
 )
@@ -200,7 +201,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 
 	var activeIncident models.Incident
 
-	if dbErr := db.DB.Where("monitor_id = ? AND status = ?", monitor.ID, "Active").First(&activeIncident).Error; dbErr != nil {
+	if dbErr := db.DB.Where("monitor_id = ? AND status = ?", monitor.ID, "active").First(&activeIncident).Error; dbErr != nil {
 		if dbErr != gorm.ErrRecordNotFound {
 			log.Printf("Failed to check for active incident for monitor %d: %v", monitor.ID, dbErr)
 		}
@@ -217,7 +218,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 
 			newIncident := models.Incident{
 				MonitorID:   monitor.ID,
-				Status:      "Active",
+				Status:      "active",
 				StartedAt:   &now,
 				Title:       title,
 				Description: description,
@@ -227,16 +228,39 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 				log.Printf("Failed to create incident for monitor %d: %v", monitor.ID, dbErr)
 			} else {
 				log.Printf("Created new incident for monitor %d", monitor.ID)
+
+				var project models.Project
+				if err := db.DB.First(&project, monitor.ProjectID).Error; err == nil {
+					newIncident.Monitor = monitor
+					if notifyErr := services.SendIncidentCreatedNotification(project, newIncident); notifyErr != nil {
+						log.Printf("Failed to send incident created notification: %v", notifyErr)
+					} else {
+						log.Printf("Successfully sent incident created notification")
+					}
+				} else {
+					log.Printf("Failed to load project for notification: %v", err)
+				}
 			}
 		}
+
 	} else if activeIncident.ID != 0 {
 		activeIncident.ResolvedAt = &now
-		activeIncident.Status = "Resolved"
+		activeIncident.Status = "resolved"
 
 		if dbErr := db.DB.Save(&activeIncident).Error; dbErr != nil {
 			log.Printf("Failed to save active incident for monitor %d", monitor.ID)
 		} else {
 			log.Printf("Saved resolved active incident for monitor %d", monitor.ID)
+
+			var project models.Project
+			if err := db.DB.First(&project, monitor.ProjectID).Error; err == nil {
+				activeIncident.Monitor = monitor
+				if notifyErr := services.SendIncidentResolvedNotification(project, activeIncident); notifyErr != nil {
+					log.Printf("Failed to send incident resolved notification: %v", notifyErr)
+				}
+			} else {
+				log.Printf("Failed to load project for notification: %v", err)
+			}
 		}
 	}
 

@@ -14,20 +14,26 @@ import (
 )
 
 type CreateProjectRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
+	Name           string `json:"name" binding:"required"`
+	Description    string `json:"description"`
+	DiscordWebhook string `json:"discord_webhook"`
+	SlackWebhook   string `json:"slack_webhook"`
 }
 
 type UpdateProjectRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
+	Name           string `json:"name" binding:"required"`
+	Description    string `json:"description"`
+	DiscordWebhook string `json:"discord_webhook"`
+	SlackWebhook   string `json:"slack_webhook"`
 }
 
 type GetProjectResponse struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	OwnerID     uint   `json:"owner_id"`
+	ID             uint   `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	OwnerID        uint   `json:"owner_id"`
+	DiscordWebhook string `json:"discord_webhook"`
+	SlackWebhook   string `json:"slack_webhook"`
 }
 
 func CreateProject(ctx *gin.Context) {
@@ -46,9 +52,11 @@ func CreateProject(ctx *gin.Context) {
 	}
 
 	project := models.Project{
-		Name:        body.Name,
-		Description: body.Description,
-		OwnerID:     userID,
+		Name:           body.Name,
+		Description:    body.Description,
+		OwnerID:        userID,
+		DiscordWebhook: body.DiscordWebhook,
+		SlackWebhook:   body.SlackWebhook,
 	}
 
 	if err := db.DB.Create(&project).Error; err != nil {
@@ -57,10 +65,12 @@ func CreateProject(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, GetProjectResponse{
-		ID:          project.ID,
-		Name:        project.Name,
-		Description: project.Description,
-		OwnerID:     project.OwnerID,
+		ID:             project.ID,
+		Name:           project.Name,
+		Description:    project.Description,
+		OwnerID:        project.OwnerID,
+		DiscordWebhook: project.DiscordWebhook,
+		SlackWebhook:   project.SlackWebhook,
 	})
 }
 
@@ -74,7 +84,7 @@ func ListProjects(ctx *gin.Context) {
 
 	var projects []models.Project
 
-	if err := db.DB.Select("id, name, description, owner_id").Where("owner_id = ?", userID).Find(&projects).Error; err != nil {
+	if err := db.DB.Select("id, name, description, owner_id, discord_webhook, slack_webhook").Where("owner_id = ?", userID).Find(&projects).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve projects"})
 		return
 	}
@@ -83,10 +93,12 @@ func ListProjects(ctx *gin.Context) {
 
 	for _, project := range projects {
 		response = append(response, GetProjectResponse{
-			ID:          project.ID,
-			Name:        project.Name,
-			Description: project.Description,
-			OwnerID:     project.OwnerID,
+			ID:             project.ID,
+			Name:           project.Name,
+			Description:    project.Description,
+			OwnerID:        project.OwnerID,
+			DiscordWebhook: project.DiscordWebhook,
+			SlackWebhook:   project.SlackWebhook,
 		})
 	}
 
@@ -129,6 +141,8 @@ func UpdateProject(ctx *gin.Context) {
 
 	project.Name = body.Name
 	project.Description = body.Description
+	project.DiscordWebhook = body.DiscordWebhook
+	project.SlackWebhook = body.SlackWebhook
 
 	if err := db.DB.Save(&project).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
@@ -136,10 +150,12 @@ func UpdateProject(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, GetProjectResponse{
-		ID:          project.ID,
-		Name:        project.Name,
-		Description: project.Description,
-		OwnerID:     project.OwnerID,
+		ID:             project.ID,
+		Name:           project.Name,
+		Description:    project.Description,
+		OwnerID:        project.OwnerID,
+		DiscordWebhook: project.DiscordWebhook,
+		SlackWebhook:   project.SlackWebhook,
 	})
 }
 

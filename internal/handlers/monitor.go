@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -78,7 +79,7 @@ type IncidentSummary struct {
 	Description string     `json:"description"`
 	Status      string     `json:"status"`
 	StartedAt   time.Time  `json:"started_at"`
-	ResolvedAt  *time.Time `json:"resolved_at"` // Change to pointer
+	ResolvedAt  *time.Time `json:"resolved_at"`
 }
 
 func CreateMonitor(ctx *gin.Context) {
@@ -152,7 +153,7 @@ func CreateMonitor(ctx *gin.Context) {
 		ProjectID: uint(projectID),
 		Name:      req.Name,
 		Type:      req.Type,
-		Status:    "Active",
+		Status:    "active",
 		Interval:  req.Interval,
 		Config:    configJSON,
 	}
@@ -400,13 +401,16 @@ func buildMonitorSummary(monitor models.Monitor) (MonitorSummary, error) {
 		config = make(map[string]interface{})
 	}
 
+	// Sanitize config to remove sensitive data
+	sanitizedConfig := sanitizeConfig(config, monitor.Type)
+
 	summary := MonitorSummary{
 		ID:           monitor.ID,
 		Name:         monitor.Name,
 		Type:         monitor.Type,
 		Status:       monitor.Status,
 		Interval:     monitor.Interval,
-		Config:       config,
+		Config:       sanitizedConfig,
 		Uptime:       uptime,
 		ResponseTime: avgResponseTime,
 	}
@@ -562,4 +566,44 @@ func GetDashboard(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, response)
+}
+
+// sanitizeConfig removes sensitive information from monitor config before sending to client
+func sanitizeConfig(config map[string]interface{}, monitorType string) map[string]interface{} {
+	sanitized := make(map[string]interface{})
+
+	// Copy all fields from original config
+	for key, value := range config {
+		sanitized[key] = value
+	}
+
+	// Remove sensitive fields based on monitor type
+	switch monitorType {
+	case "database":
+		// Remove both password and username for security
+		delete(sanitized, "password")
+		delete(sanitized, "username")
+	case "http", "https":
+		/*
+			Remove any Authorization headers or sensitive headers if they exist
+			This will be useful when I implement the headers
+		*/
+		if headers, exists := sanitized["headers"]; exists {
+			if headersMap, ok := headers.(map[string]interface{}); ok {
+				cleanHeaders := make(map[string]interface{})
+				for headerName, headerValue := range headersMap {
+					// Skip sensitive headers
+					lowerName := strings.ToLower(headerName)
+					if lowerName == "authorization" || lowerName == "x-api-key" || lowerName == "x-auth-token" {
+						cleanHeaders[headerName] = "***"
+					} else {
+						cleanHeaders[headerName] = headerValue
+					}
+				}
+				sanitized["headers"] = cleanHeaders
+			}
+		}
+	}
+
+	return sanitized
 }
