@@ -67,44 +67,32 @@ const (
 )
 
 func SendIncidentCreatedNotification(project models.Project, incident models.Incident) error {
-	var errors []error
-
 	if project.DiscordWebhook != "" {
 		if err := sendDiscordIncidentCreated(project.DiscordWebhook, project, incident); err != nil {
-			errors = append(errors, fmt.Errorf("discord: %w", err))
+			return fmt.Errorf("discord: %w", err)
 		}
 	}
 
 	if project.SlackWebhook != "" {
 		if err := sendSlackIncidentCreated(project.SlackWebhook, project, incident); err != nil {
-			errors = append(errors, fmt.Errorf("slack: %w", err))
+			return fmt.Errorf("slack: %w", err)
 		}
-	}
-
-	if len(errors) > 0 {
-		return errors[0]
 	}
 
 	return nil
 }
 
 func SendIncidentResolvedNotification(project models.Project, incident models.Incident) error {
-	var errors []error
-
 	if project.DiscordWebhook != "" {
 		if err := sendDiscordIncidentResolved(project.DiscordWebhook, project, incident); err != nil {
-			errors = append(errors, fmt.Errorf("discord: %w", err))
+			return fmt.Errorf("discord: %w", err)
 		}
 	}
 
 	if project.SlackWebhook != "" {
 		if err := sendSlackIncidentResolved(project.SlackWebhook, project, incident); err != nil {
-			errors = append(errors, fmt.Errorf("slack: %w", err))
+			return fmt.Errorf("slack: %w", err)
 		}
-	}
-
-	if len(errors) > 0 {
-		return errors[0]
 	}
 
 	return nil
