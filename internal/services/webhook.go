@@ -115,7 +115,7 @@ func sendDiscordIncidentCreated(webhookURL string, project models.Project, incid
 
 	payload := DiscordWebhookRequest{
 		Username:  "Monocle Monitor",
-		AvatarURL: "https://cdn.discordapp.com/emojis/🚨.png",
+		AvatarURL: "https://avatars.githubusercontent.com/u/219688397",
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "🚨 **INCIDENT DETECTED**",
@@ -159,7 +159,7 @@ func sendDiscordIncidentResolved(webhookURL string, project models.Project, inci
 
 	payload := DiscordWebhookRequest{
 		Username:  "Monocle Monitor",
-		AvatarURL: "https://cdn.discordapp.com/emojis/✅.png",
+		AvatarURL: "https://avatars.githubusercontent.com/u/219688397",
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "✅ **INCIDENT RESOLVED**",
