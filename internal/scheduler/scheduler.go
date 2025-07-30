@@ -201,9 +201,9 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 
 	var activeIncident models.Incident
 
-	if dbErr := db.DB.Where("monitor_id = ? AND status = ?", monitor.ID, "active").First(&activeIncident).Error; dbErr != nil {
-		if dbErr != gorm.ErrRecordNotFound {
-			log.Printf("Failed to check for active incident for monitor %d: %v", monitor.ID, dbErr)
+	if err := db.DB.Where("monitor_id = ? AND status = ?", monitor.ID, "active").First(&activeIncident).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			log.Printf("Failed to check for active incident for monitor %d: %v", monitor.ID, err)
 		}
 	}
 
@@ -224,8 +224,8 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 				Description: description,
 			}
 
-			if dbErr := db.DB.Create(&newIncident).Error; dbErr != nil {
-				log.Printf("Failed to create incident for monitor %d: %v", monitor.ID, dbErr)
+			if err := db.DB.Create(&newIncident).Error; err != nil {
+				log.Printf("Failed to create incident for monitor %d: %v", monitor.ID, err)
 			} else {
 				log.Printf("Created new incident for monitor %d", monitor.ID)
 
@@ -247,7 +247,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 		activeIncident.ResolvedAt = &now
 		activeIncident.Status = "resolved"
 
-		if dbErr := db.DB.Save(&activeIncident).Error; dbErr != nil {
+		if err := db.DB.Save(&activeIncident).Error; err != nil {
 			log.Printf("Failed to save active incident for monitor %d", monitor.ID)
 		} else {
 			log.Printf("Saved resolved active incident for monitor %d", monitor.ID)
@@ -272,8 +272,8 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 		CheckedAt:    time.Now(),
 	}
 
-	if dbErr := db.DB.Create(&check).Error; dbErr != nil {
-		log.Printf("Failed to store check result for monitor %d: %v", monitor.ID, dbErr)
+	if err := db.DB.Create(&check).Error; err != nil {
+		log.Printf("Failed to store check result for monitor %d: %v", monitor.ID, err)
 	}
 }
 
