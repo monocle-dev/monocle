@@ -61,6 +61,9 @@ const (
 	ColorRed    = 16711680 // #FF0000 - Incident created
 	ColorGreen  = 65280    // #00FF00 - Incident resolved
 	ColorOrange = 16753920 // #FFA500 - Warning
+
+	Username  = "Monocle Monitor"
+	AvatarURL = "https://avatars.githubusercontent.com/u/219688397"
 )
 
 func SendIncidentCreatedNotification(project models.Project, incident models.Incident) error {
@@ -114,8 +117,8 @@ func sendDiscordIncidentCreated(webhookURL string, project models.Project, incid
 	}
 
 	payload := DiscordWebhookRequest{
-		Username:  "Monocle Monitor",
-		AvatarURL: "https://avatars.githubusercontent.com/u/219688397",
+		Username:  Username,
+		AvatarURL: AvatarURL,
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "🚨 **INCIDENT DETECTED**",
@@ -158,8 +161,8 @@ func sendDiscordIncidentResolved(webhookURL string, project models.Project, inci
 	}
 
 	payload := DiscordWebhookRequest{
-		Username:  "Monocle Monitor",
-		AvatarURL: "https://avatars.githubusercontent.com/u/219688397",
+		Username:  Username,
+		AvatarURL: AvatarURL,
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "✅ **INCIDENT RESOLVED**",
@@ -192,7 +195,7 @@ func sendSlackIncidentCreated(webhookURL string, project models.Project, inciden
 	}
 
 	payload := SlackWebhookRequest{
-		Username:  "Monocle Monitor",
+		Username:  Username,
 		IconEmoji: ":rotating_light:",
 		Text:      ":rotating_light: *INCIDENT DETECTED*",
 		Attachments: []SlackAttachment{
@@ -234,7 +237,7 @@ func sendSlackIncidentResolved(webhookURL string, project models.Project, incide
 	}
 
 	payload := SlackWebhookRequest{
-		Username:  "Monocle Monitor",
+		Username:  Username,
 		IconEmoji: ":white_check_mark:",
 		Text:      ":white_check_mark: *INCIDENT RESOLVED*",
 		Attachments: []SlackAttachment{
