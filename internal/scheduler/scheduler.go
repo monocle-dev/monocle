@@ -308,7 +308,7 @@ func (s *Scheduler) generateIncidentDescription(monitor models.Monitor, err erro
 
 	// Add monitor configuration details
 	description.WriteString("Monitor Configuration:\n")
-	description.WriteString(fmt.Sprintf("  Type: %s\n", strings.Title(monitor.Type)))
+	description.WriteString(fmt.Sprintf("  Type: %s\n", monitor.Type))
 	description.WriteString(fmt.Sprintf("  Check Interval: %d seconds\n", monitor.Interval))
 
 	switch monitor.Type {
