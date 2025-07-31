@@ -224,7 +224,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 				Description: description,
 			}
 
-			if err := db.DB.Create(&newIncident).Error; err != nil {
+			if projectErr := db.DB.Create(&newIncident).Error; projectErr != nil {
 				log.Printf("Failed to create incident for monitor %d: %v", monitor.ID, err)
 			} else {
 				log.Printf("Created new incident for monitor %d", monitor.ID)
@@ -238,7 +238,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 						log.Printf("Successfully sent incident created notification")
 					}
 				} else {
-					log.Printf("Failed to load project for notification: %v", err)
+					log.Printf("Failed to load project for notification: %v", projectErr)
 				}
 			}
 		}
@@ -247,7 +247,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 		activeIncident.ResolvedAt = &now
 		activeIncident.Status = "resolved"
 
-		if err := db.DB.Save(&activeIncident).Error; err != nil {
+		if projectErr := db.DB.Save(&activeIncident).Error; projectErr != nil {
 			log.Printf("Failed to save active incident for monitor %d", monitor.ID)
 		} else {
 			log.Printf("Saved resolved active incident for monitor %d", monitor.ID)
@@ -259,7 +259,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 					log.Printf("Failed to send incident resolved notification: %v", notifyErr)
 				}
 			} else {
-				log.Printf("Failed to load project for notification: %v", err)
+				log.Printf("Failed to load project for notification: %v", projectErr)
 			}
 		}
 	}
