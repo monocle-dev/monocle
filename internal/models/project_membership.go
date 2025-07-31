@@ -1,9 +1,7 @@
 package models
 
-import "gorm.io/gorm"
-
 type ProjectMembership struct {
-	gorm.Model
+	BaseModel
 
 	UserID    uint   `gorm:"not null;uniqueIndex:idx_user_project"`
 	ProjectID uint   `gorm:"not null;uniqueIndex:idx_user_project"`

@@ -3,14 +3,18 @@ package scheduler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/models"
 	"github.com/monocle-dev/monocle/internal/monitors"
+	"github.com/monocle-dev/monocle/internal/services"
 	"github.com/monocle-dev/monocle/internal/types"
+	"gorm.io/gorm"
 )
 
 type Scheduler struct {
@@ -179,7 +183,7 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 	}
 
 	responseTime := time.Since(start)
-	s.storeCheckResult(monitor.ID, err, responseTime)
+	s.storeCheckResult(monitor, err, responseTime)
 
 	if err != nil {
 		log.Printf("Monitor %d failed: %v", monitor.ID, err)
@@ -189,26 +193,157 @@ func (s *Scheduler) executeCheck(monitor models.Monitor) {
 }
 
 // storeCheckResult saves the check result to database
-func (s *Scheduler) storeCheckResult(monitorID uint, err error, responseTime time.Duration) {
+func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, responseTime time.Duration) {
 	status := "success"
 	message := ""
+
+	now := time.Now()
+
+	var activeIncident models.Incident
+
+	if err := db.DB.Where("monitor_id = ? AND status = ?", monitor.ID, "active").First(&activeIncident).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			log.Printf("Failed to check for active incident for monitor %d: %v", monitor.ID, err)
+		}
+	}
 
 	if err != nil {
 		status = "failure"
 		message = err.Error()
+
+		if activeIncident.ID == 0 {
+			// Create a new incident if none exists
+			title := s.generateIncidentTitle(monitor)
+			description := s.generateIncidentDescription(monitor, err)
+
+			newIncident := models.Incident{
+				MonitorID:   monitor.ID,
+				Status:      "active",
+				StartedAt:   &now,
+				Title:       title,
+				Description: description,
+			}
+
+			if projectErr := db.DB.Create(&newIncident).Error; projectErr != nil {
+				log.Printf("Failed to create incident for monitor %d: %v", monitor.ID, err)
+			} else {
+				log.Printf("Created new incident for monitor %d", monitor.ID)
+
+				var project models.Project
+				if err := db.DB.First(&project, monitor.ProjectID).Error; err == nil {
+					newIncident.Monitor = monitor
+					if notifyErr := services.SendIncidentCreatedNotification(project, newIncident); notifyErr != nil {
+						log.Printf("Failed to send incident created notification: %v", notifyErr)
+					} else {
+						log.Printf("Successfully sent incident created notification")
+					}
+				} else {
+					log.Printf("Failed to load project for notification: %v", projectErr)
+				}
+			}
+		}
+
+	} else if activeIncident.ID != 0 {
+		activeIncident.ResolvedAt = &now
+		activeIncident.Status = "resolved"
+
+		if projectErr := db.DB.Save(&activeIncident).Error; projectErr != nil {
+			log.Printf("Failed to save active incident for monitor %d", monitor.ID)
+		} else {
+			log.Printf("Saved resolved active incident for monitor %d", monitor.ID)
+
+			var project models.Project
+			if err := db.DB.First(&project, monitor.ProjectID).Error; err == nil {
+				activeIncident.Monitor = monitor
+				if notifyErr := services.SendIncidentResolvedNotification(project, activeIncident); notifyErr != nil {
+					log.Printf("Failed to send incident resolved notification: %v", notifyErr)
+				}
+			} else {
+				log.Printf("Failed to load project for notification: %v", projectErr)
+			}
+		}
 	}
 
 	check := models.MonitorCheck{
-		MonitorID:    monitorID,
+		MonitorID:    monitor.ID,
 		Status:       status,
 		ResponseTime: int(responseTime.Milliseconds()),
 		Message:      message,
 		CheckedAt:    time.Now(),
 	}
 
-	if dbErr := db.DB.Create(&check).Error; dbErr != nil {
-		log.Printf("Failed to store check result for monitor %d: %v", monitorID, dbErr)
+	if err := db.DB.Create(&check).Error; err != nil {
+		log.Printf("Failed to store check result for monitor %d: %v", monitor.ID, err)
 	}
+}
+
+// generateIncidentTitle creates a descriptive title for an incident
+func (s *Scheduler) generateIncidentTitle(monitor models.Monitor) string {
+	var title string
+
+	switch monitor.Type {
+	case "http":
+		title = fmt.Sprintf("HTTP monitor '%s' is down", monitor.Name)
+	case "dns":
+		title = fmt.Sprintf("DNS monitor '%s' is failing", monitor.Name)
+	case "database":
+		title = fmt.Sprintf("Database monitor '%s' is unreachable", monitor.Name)
+	default:
+		title = fmt.Sprintf("Monitor '%s' (%s) is failing", monitor.Name, monitor.Type)
+	}
+
+	return title
+}
+
+// generateIncidentDescription creates a detailed description for an incident
+func (s *Scheduler) generateIncidentDescription(monitor models.Monitor, err error) string {
+	var description strings.Builder
+
+	description.WriteString(fmt.Sprintf("Monitor '%s' has failed.\n\n", monitor.Name))
+
+	// Add error details
+	if err != nil {
+		description.WriteString(fmt.Sprintf("Error: %s\n\n", err.Error()))
+	}
+
+	// Add monitor configuration details
+	description.WriteString("Monitor Configuration:\n")
+	description.WriteString(fmt.Sprintf("  Type: %s\n", monitor.Type))
+	description.WriteString(fmt.Sprintf("  Check Interval: %d seconds\n", monitor.Interval))
+
+	switch monitor.Type {
+	case "http":
+		var cfg types.HttpConfig
+		if json.Unmarshal(monitor.Config, &cfg) == nil {
+			description.WriteString(fmt.Sprintf("  URL: %s\n", cfg.URL))
+			description.WriteString(fmt.Sprintf("  Method: %s\n", cfg.Method))
+			description.WriteString(fmt.Sprintf("  Expected Status: %d\n", cfg.ExpectedStatus))
+			if cfg.Timeout > 0 {
+				description.WriteString(fmt.Sprintf("  Timeout: %d seconds\n", cfg.Timeout))
+			}
+		}
+	case "dns":
+		var cfg types.DNSConfig
+		if json.Unmarshal(monitor.Config, &cfg) == nil {
+			description.WriteString(fmt.Sprintf("  Domain: %s\n", cfg.Domain))
+			if cfg.RecordType != "" {
+				description.WriteString(fmt.Sprintf("  Record Type: %s\n", strings.ToUpper(cfg.RecordType)))
+			}
+			if cfg.Expected != "" {
+				description.WriteString(fmt.Sprintf("  Expected Value: %s\n", cfg.Expected))
+			}
+		}
+	case "database":
+		var cfg types.DatabaseConfig
+		if json.Unmarshal(monitor.Config, &cfg) == nil {
+			description.WriteString(fmt.Sprintf("  Database Type: %s\n", strings.ToUpper(cfg.Type)))
+			description.WriteString(fmt.Sprintf("  Host: %s:%d\n", cfg.Host, cfg.Port))
+			description.WriteString(fmt.Sprintf("  Database: %s\n", cfg.Database))
+			description.WriteString(fmt.Sprintf("  Username: %s\n", cfg.Username))
+		}
+	}
+
+	return description.String()
 }
 
 // GetStatus returns current scheduler status

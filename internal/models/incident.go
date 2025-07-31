@@ -2,16 +2,13 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Incident struct {
-	gorm.Model
+	BaseModel
 
 	MonitorID   uint   `gorm:"not null;index"`
-	Status      string `gorm:"not null"`
-	Severity    string `gorm:"not null"`
+	Status      string `gorm:"not null"` // e.g., "Active", "Resolved"
 	Title       string `gorm:"not null"`
 	Description string
 	StartedAt   *time.Time

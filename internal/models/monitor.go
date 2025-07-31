@@ -2,11 +2,10 @@ package models
 
 import (
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type Monitor struct {
-	gorm.Model
+	BaseModel
 
 	ProjectID uint           `gorm:"not null;index"` // Foreign key to the Project
 	Name      string         `gorm:"not null"`

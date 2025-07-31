@@ -2,11 +2,10 @@ package models
 
 import (
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type NotificationRule struct {
-	gorm.Model
+	BaseModel
 
 	ProjectID   uint           `gorm:"not null;index"`
 	UserID      uint           `gorm:"not null;index"`

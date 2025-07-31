@@ -1,15 +1,13 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Project struct {
-	gorm.Model
+	BaseModel
 
-	Name        string `gorm:"not null"`
-	Description string
-	OwnerID     uint `gorm:"not null;index"`
+	Name           string `gorm:"not null"`
+	Description    string
+	OwnerID        uint `gorm:"not null;index"`
+	DiscordWebhook string
+	SlackWebhook   string
 
 	// Relationships
 	Owner              User                `gorm:"foreignKey:OwnerID;constraint:OnUpdate:Cascade,OnDelete:CASCADE"`
