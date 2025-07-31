@@ -257,10 +257,24 @@ func sendDiscordWebhook(webhookURL string, payload DiscordWebhookRequest) error 
 		return fmt.Errorf("failed to marshal Discord payload: %w", err)
 	}
 
-	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return fmt.Errorf("failed to send Discord webhook: %w", err)
+	client := &http.Client{
+		Timeout: 10 * time.Second,
 	}
+
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(body))
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
@@ -276,10 +290,24 @@ func sendSlackWebhook(webhookURL string, payload SlackWebhookRequest) error {
 		return fmt.Errorf("failed to marshal Slack payload: %w", err)
 	}
 
-	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(body))
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(body))
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+
 	if err != nil {
 		return fmt.Errorf("failed to send Slack webhook: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
