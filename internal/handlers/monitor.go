@@ -80,6 +80,7 @@ type IncidentSummary struct {
 	Status      string     `json:"status"`
 	StartedAt   time.Time  `json:"started_at"`
 	ResolvedAt  *time.Time `json:"resolved_at"`
+	Duration    string     `json:"duration"`
 }
 
 func CreateMonitor(ctx *gin.Context) {
@@ -538,6 +539,14 @@ func GetDashboard(ctx *gin.Context) {
 			startedAt = *incident.StartedAt
 		}
 
+		var duration string
+
+		if incident.ResolvedAt != nil {
+			if incident.StartedAt != nil {
+				duration = incident.ResolvedAt.Sub(*incident.StartedAt).Round(time.Second).String()
+			}
+		}
+
 		incidentSummaries = append(incidentSummaries, IncidentSummary{
 			ID:          incident.ID,
 			MonitorName: monitor.Name,
@@ -546,6 +555,7 @@ func GetDashboard(ctx *gin.Context) {
 			Status:      incident.Status,
 			StartedAt:   startedAt,
 			ResolvedAt:  incident.ResolvedAt,
+			Duration:    duration,
 		})
 	}
 
