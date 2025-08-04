@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/monocle-dev/monocle/internal/types"
 )
 
 var (
@@ -61,7 +62,15 @@ func WebSocket(c *gin.Context) {
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
-			return true
+			origin := r.Header.Get("Origin")
+
+			for _, allowed := range types.AllowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+
+			return false
 		},
 	}
 

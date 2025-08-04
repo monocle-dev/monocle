@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/monocle-dev/monocle/internal/handlers"
 	"github.com/monocle-dev/monocle/internal/middleware"
+	"github.com/monocle-dev/monocle/internal/types"
 )
 
 func NewRouter() *gin.Engine {
@@ -14,7 +15,7 @@ func NewRouter() *gin.Engine {
 
 	// Add CORS middleware
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:5173"},
+		AllowOrigins:     types.AllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
