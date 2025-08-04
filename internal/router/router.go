@@ -25,7 +25,7 @@ func NewRouter() *gin.Engine {
 	api := r.Group("/api")
 	{
 		api.GET("/health", handlers.HealthCheck)
-		api.GET("/ws/:project_id", handlers.WebSocket)
+		api.GET("/ws/:project_id", middleware.AuthMiddleware(), handlers.WebSocket)
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", handlers.CreateUser)
