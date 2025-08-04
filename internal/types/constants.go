@@ -11,7 +11,6 @@ var (
 	// Default allowed origins for development
 	defaultOrigins = []string{
 		"http://localhost:3000",
-		"http://localhost:3001",
 		"http://localhost:5173",
 	}
 
