@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,11 +18,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type BroadcastFunc func(projectID string)
+
 type Scheduler struct {
-	monitors map[uint]*MonitorJob // monitor ID -> job
-	mu       sync.RWMutex
-	ctx      context.Context
-	cancel   context.CancelFunc
+	monitors  map[uint]*MonitorJob // monitor ID -> job
+	mu        sync.RWMutex
+	ctx       context.Context
+	cancel    context.CancelFunc
+	broadcast BroadcastFunc // callback for broadcasting updates
 }
 
 type MonitorJob struct {
@@ -38,6 +42,11 @@ func NewScheduler() *Scheduler {
 		ctx:      ctx,
 		cancel:   cancel,
 	}
+}
+
+// SetBroadcastCallback sets the function to call when broadcasting updates
+func (s *Scheduler) SetBroadcastCallback(broadcast BroadcastFunc) {
+	s.broadcast = broadcast
 }
 
 // Start loads all active monitors and begins scheduling
@@ -240,6 +249,11 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 				} else {
 					log.Printf("Failed to load project for notification: %v", projectErr)
 				}
+
+				// Broadcast incident creation to WebSocket clients
+				if s.broadcast != nil {
+					s.broadcast(strconv.FormatUint(uint64(monitor.ProjectID), 10))
+				}
 			}
 		}
 
@@ -261,6 +275,11 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 			} else {
 				log.Printf("Failed to load project for notification: %v", projectErr)
 			}
+
+			// Broadcast incident resolution to WebSocket clients
+			if s.broadcast != nil {
+				s.broadcast(strconv.FormatUint(uint64(monitor.ProjectID), 10))
+			}
 		}
 	}
 
@@ -274,6 +293,11 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 
 	if err := db.DB.Create(&check).Error; err != nil {
 		log.Printf("Failed to store check result for monitor %d: %v", monitor.ID, err)
+	} else {
+		// Broadcast check completion to WebSocket clients
+		if s.broadcast != nil {
+			s.broadcast(strconv.FormatUint(uint64(monitor.ProjectID), 10))
+		}
 	}
 }
 
@@ -391,5 +415,12 @@ func RemoveMonitor(monitorID uint) {
 func UpdateMonitor(monitor models.Monitor) {
 	if globalScheduler != nil {
 		globalScheduler.UpdateMonitor(monitor)
+	}
+}
+
+// SetBroadcastCallback sets the broadcast function for the global scheduler
+func SetBroadcastCallback(broadcast BroadcastFunc) {
+	if globalScheduler != nil {
+		globalScheduler.SetBroadcastCallback(broadcast)
 	}
 }

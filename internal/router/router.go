@@ -22,10 +22,10 @@ func NewRouter() *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	r.GET("/health", handlers.HealthCheck)
-
 	api := r.Group("/api")
 	{
+		api.GET("/health", handlers.HealthCheck)
+		api.GET("/ws/:project_id", handlers.WebSocket)
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", handlers.CreateUser)
