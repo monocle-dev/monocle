@@ -28,14 +28,17 @@ func BroadCastRefresh(projectID string) {
 	clients, exists := projectClients[projectID]
 	if !exists || len(clients) == 0 {
 		projectClientsMu.RUnlock()
+		log.Printf("No clients connected for project %s", projectID)
 		return
 	}
 
 	// Create a copy of the clients map to avoid holding the lock during message sending
 	clientsCopy := make([]*websocket.Conn, 0, len(clients))
+
 	for conn := range clients {
 		clientsCopy = append(clientsCopy, conn)
 	}
+
 	projectClientsMu.RUnlock()
 
 	// Send refresh message to all clients

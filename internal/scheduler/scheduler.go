@@ -252,6 +252,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 
 				// Broadcast incident creation to WebSocket clients
 				if s.broadcast != nil {
+					log.Printf("Broadcasting incident creation for monitor %d, project %d", monitor.ID, monitor.ProjectID)
 					s.broadcast(strconv.FormatUint(uint64(monitor.ProjectID), 10))
 				}
 			}
@@ -278,6 +279,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 
 			// Broadcast incident resolution to WebSocket clients
 			if s.broadcast != nil {
+				log.Printf("Broadcasting incident resolution for monitor %d, project %d", monitor.ID, monitor.ProjectID)
 				s.broadcast(strconv.FormatUint(uint64(monitor.ProjectID), 10))
 			}
 		}
@@ -296,6 +298,7 @@ func (s *Scheduler) storeCheckResult(monitor models.Monitor, err error, response
 	} else {
 		// Broadcast check completion to WebSocket clients
 		if s.broadcast != nil {
+			log.Printf("Broadcasting check completion for monitor %d, project %d", monitor.ID, monitor.ProjectID)
 			s.broadcast(strconv.FormatUint(uint64(monitor.ProjectID), 10))
 		}
 	}
