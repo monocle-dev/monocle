@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/monocle-dev/monocle/db"
 	"github.com/monocle-dev/monocle/internal/auth"
+	"github.com/monocle-dev/monocle/internal/handlers"
 	"github.com/monocle-dev/monocle/internal/router"
 	"github.com/monocle-dev/monocle/internal/scheduler"
 )
@@ -45,6 +46,10 @@ func main() {
 	}
 
 	r := router.NewRouter()
+
+	scheduler.SetBroadcastCallback(func(projectID string) {
+		handlers.BroadCastRefresh(projectID)
+	})
 
 	var port string
 

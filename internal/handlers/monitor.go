@@ -166,6 +166,10 @@ func CreateMonitor(ctx *gin.Context) {
 
 	// Add monitor to scheduler
 	scheduler.AddMonitor(monitor)
+
+	// Broadcast immediate refresh for new monitor
+	BroadCastRefresh(strconv.FormatUint(uint64(projectID), 10))
+
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Monitor created successfully", "monitor_id": monitor.ID})
 }
 
@@ -202,6 +206,9 @@ func DeleteMonitor(ctx *gin.Context) {
 
 	// Remove monitor from scheduler
 	scheduler.RemoveMonitor(monitor.ID)
+
+	// Broadcast immediate refresh for monitor deletion
+	BroadCastRefresh(strconv.FormatUint(uint64(projectID), 10))
 
 	ctx.Status(http.StatusNoContent)
 }
@@ -372,6 +379,9 @@ func UpdateMonitor(ctx *gin.Context) {
 	}
 
 	scheduler.UpdateMonitor(monitor)
+
+	// Broadcast immediate refresh for monitor configuration update
+	BroadCastRefresh(strconv.FormatUint(uint64(projectID), 10))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Monitor updated successfully", "monitor_id": monitor.ID})
 }
