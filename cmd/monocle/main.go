@@ -17,9 +17,8 @@ func main() {
 	var err error
 
 	err = godotenv.Load()
-
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Println("No .env file found, using environment variables directly")
 	}
 
 	dsn := os.Getenv("POSTGRES_DSN")
