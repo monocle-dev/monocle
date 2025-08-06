@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# Development files
+.env
+.env.local
+.env.example
+
+# Temporary files
+tmp/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+bin/
+main
