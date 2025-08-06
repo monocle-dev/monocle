@@ -156,15 +156,21 @@ func WebSocket(c *gin.Context) {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 
+	done := make(chan struct{})
+
 	go func() {
-		// Send pings periodically
-		for range ticker.C {
-			if err := conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
-				log.Printf("Failed to set write deadline for project %s: %v", projectID, err)
-				return
-			}
-			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Printf("Ping failed for project %s: %v", projectID, err)
+		for {
+			select {
+			case <-ticker.C:
+				if err := conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+					log.Printf("Failed to set write deadline for project %s: %v", projectID, err)
+					return
+				}
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					log.Printf("Ping failed for project %s: %v", projectID, err)
+					return
+				}
+			case <-done:
 				return
 			}
 		}
