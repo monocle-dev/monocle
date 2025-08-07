@@ -11,8 +11,14 @@ import (
 	"github.com/monocle-dev/monocle/internal/types"
 )
 
+// wsClient wraps a websocket connection with a mutex to prevent concurrent writes
+type wsClient struct {
+	conn  *websocket.Conn
+	mutex sync.Mutex
+}
+
 var (
-	projectClients   = make(map[string]map[*websocket.Conn]bool)
+	projectClients   = make(map[string]map[*wsClient]bool)
 	projectClientsMu sync.RWMutex
 )
 
@@ -32,42 +38,47 @@ func BroadCastRefresh(projectID string) {
 		return
 	}
 
-	// Create a copy of the clients map to avoid holding the lock during message sending
-	clientsCopy := make([]*websocket.Conn, 0, len(clients))
+	clientsCopy := make([]*wsClient, 0, len(clients))
 
-	for conn := range clients {
-		clientsCopy = append(clientsCopy, conn)
+	for client := range clients {
+		clientsCopy = append(clientsCopy, client)
 	}
 
 	projectClientsMu.RUnlock()
 
 	// Send refresh message to all clients
-	for _, conn := range clientsCopy {
-		// Set write deadline
-		if err := conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
-			log.Printf("Failed to set write deadline for broadcast: %v", err)
-			continue
-		}
+	for _, client := range clientsCopy {
+		go func(client *wsClient) {
+			// Lock this specific client connection to prevent concurrent writes
+			client.mutex.Lock()
+			defer client.mutex.Unlock()
 
-		err := conn.WriteJSON(map[string]string{
-			"type":       "refresh",
-			"message":    "Dashboard data updated",
-			"project_id": projectID,
-		})
-
-		if err != nil {
-			log.Printf("Failed to broadcast refresh to client: %v", err)
-			// Remove failed connection
-			projectClientsMu.Lock()
-			if clients, exists := projectClients[projectID]; exists {
-				delete(clients, conn)
-				if len(clients) == 0 {
-					delete(projectClients, projectID)
-				}
+			// Set write deadline
+			if err := client.conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+				log.Printf("Failed to set write deadline for broadcast: %v", err)
+				return
 			}
-			projectClientsMu.Unlock()
-			conn.Close()
-		}
+
+			err := client.conn.WriteJSON(map[string]string{
+				"type":       "refresh",
+				"message":    "Dashboard data updated",
+				"project_id": projectID,
+			})
+
+			if err != nil {
+				log.Printf("Failed to broadcast refresh to client: %v", err)
+				// Remove failed connection
+				projectClientsMu.Lock()
+				if clients, exists := projectClients[projectID]; exists {
+					delete(clients, client)
+					if len(clients) == 0 {
+						delete(projectClients, projectID)
+					}
+				}
+				projectClientsMu.Unlock()
+				client.conn.Close()
+			}
+		}(client)
 	}
 }
 
@@ -111,11 +122,12 @@ func WebSocket(c *gin.Context) {
 	})
 
 	// Register the connection to the project
+	client := &wsClient{conn: conn}
 	projectClientsMu.Lock()
 	if projectClients[projectID] == nil {
-		projectClients[projectID] = make(map[*websocket.Conn]bool)
+		projectClients[projectID] = make(map[*wsClient]bool)
 	}
-	projectClients[projectID][conn] = true
+	projectClients[projectID][client] = true
 	projectClientsMu.Unlock()
 
 	// Clean up when connection closes
@@ -123,7 +135,7 @@ func WebSocket(c *gin.Context) {
 		projectClientsMu.Lock()
 
 		if clients, exists := projectClients[projectID]; exists {
-			delete(clients, conn)
+			delete(clients, client)
 
 			if len(clients) == 0 {
 				delete(projectClients, projectID)
@@ -137,8 +149,10 @@ func WebSocket(c *gin.Context) {
 	}()
 
 	// Send welcome message
+	client.mutex.Lock()
 	if err := conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
 		log.Printf("Failed to set write deadline for welcome message: %v", err)
+		client.mutex.Unlock()
 		return
 	}
 
@@ -147,6 +161,7 @@ func WebSocket(c *gin.Context) {
 		"message":    "WebSocket connection established",
 		"project_id": projectID,
 	})
+	client.mutex.Unlock()
 
 	if err != nil {
 		log.Printf("Failed to send welcome message: %v", err)
@@ -162,14 +177,18 @@ func WebSocket(c *gin.Context) {
 		for {
 			select {
 			case <-ticker.C:
+				client.mutex.Lock()
 				if err := conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
 					log.Printf("Failed to set write deadline for project %s: %v", projectID, err)
+					client.mutex.Unlock()
 					return
 				}
 				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 					log.Printf("Ping failed for project %s: %v", projectID, err)
+					client.mutex.Unlock()
 					return
 				}
+				client.mutex.Unlock()
 			case <-done:
 				return
 			}
