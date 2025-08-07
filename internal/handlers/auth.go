@@ -27,6 +27,13 @@ type LoginUserRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
+type UpdateUserRequest struct {
+	Name            string `json:"name"`
+	Email           string `json:"email" binding:"omitempty,email"`
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password" binding:"omitempty,min=8"`
+}
+
 func CreateUser(ctx *gin.Context) {
 	var user CreateUserRequest
 
@@ -177,4 +184,157 @@ func Me(ctx *gin.Context) {
 func LogoutUser(ctx *gin.Context) {
 	ctx.SetCookie("token", "", -1, "/", "", true, true)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+func UpdateUser(ctx *gin.Context) {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Fetch the full user record from database to access password hash
+	var dbUser models.User
+	if err := db.DB.First(&dbUser, currentUser.ID).Error; err != nil {
+		log.Printf("Failed to fetch user: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	var updateReq UpdateUserRequest
+	if err := ctx.BindJSON(&updateReq); err != nil {
+		log.Printf("Failed to bind JSON: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// Start building the update data
+	updates := make(map[string]interface{})
+
+	// Update name if provided
+	if updateReq.Name != "" {
+		updates["name"] = strings.TrimSpace(updateReq.Name)
+	}
+
+	// Update email if provided
+	if updateReq.Email != "" {
+		newEmail := strings.ToLower(strings.TrimSpace(updateReq.Email))
+
+		// Check if email is already taken by another user
+		if newEmail != dbUser.Email {
+			var existingUser models.User
+			err := db.DB.Where("email = ? AND id != ?", newEmail, dbUser.ID).First(&existingUser).Error
+			if err == nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
+				return
+			}
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Printf("Database error when checking existing email: %v", err)
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+				return
+			}
+		}
+
+		updates["email"] = newEmail
+	}
+
+	// Update password if provided
+	if updateReq.NewPassword != "" {
+		// Verify current password if changing password
+		if updateReq.CurrentPassword == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Current password is required to change password"})
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(updateReq.CurrentPassword))
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Current password is incorrect"})
+			return
+		}
+
+		// Hash new password
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(updateReq.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			log.Printf("Failed to hash new password: %v", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			return
+		}
+
+		updates["password_hash"] = string(passwordHash)
+	}
+
+	// If no updates provided
+	if len(updates) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "No valid fields to update"})
+		return
+	}
+
+	// Perform the update
+	if err := db.DB.Model(&dbUser).Updates(updates).Error; err != nil {
+		log.Printf("Failed to update user: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	// Refresh user data from database
+	if err := db.DB.First(&dbUser, dbUser.ID).Error; err != nil {
+		log.Printf("Failed to refresh user data: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "User updated successfully",
+		"user": types.UserResponse{
+			ID:    dbUser.ID,
+			Name:  dbUser.Name,
+			Email: dbUser.Email,
+		},
+	})
+}
+
+func DeleteUser(ctx *gin.Context) {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Fetch the full user record from database
+	var dbUser models.User
+	if err := db.DB.First(&dbUser, currentUser.ID).Error; err != nil {
+		log.Printf("Failed to fetch user: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	// Validate password for account deletion
+	var deleteReq struct {
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := ctx.BindJSON(&deleteReq); err != nil {
+		log.Printf("Failed to bind JSON: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password is required for account deletion"})
+		return
+	}
+
+	// Verify password
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(deleteReq.Password))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Incorrect password"})
+		return
+	}
+
+	// Delete user account (this will cascade delete related records due to foreign key constraints)
+	if err := db.DB.Delete(&dbUser).Error; err != nil {
+		log.Printf("Failed to delete user: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	// Clear the authentication cookie
+	ctx.SetCookie("token", "", -1, "/", "", true, true)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Account deleted successfully"})
 }
