@@ -88,15 +88,16 @@ func CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.SetCookie(
-		"token",    // cookie name
-		token,      // value
-		60*60*24*7, // maxAge (7 days in seconds)
-		"/",        // path
-		"",         // domain (empty = current domain)
-		true,       // secure (set to true in production with HTTPS)
-		true,       // httpOnly
-	)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   60 * 60 * 24 * 7,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
 
 	ctx.JSON(http.StatusCreated, gin.H{
 		"user": types.UserResponse{
@@ -145,15 +146,16 @@ func LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.SetCookie(
-		"token",    // cookie name
-		token,      // value
-		60*60*24*7, // maxAge (7 days in seconds)
-		"/",        // path
-		"",         // domain (empty = current domain)
-		true,       // secure (set to true in production with HTTPS)
-		true,       // httpOnly
-	)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   60 * 60 * 24 * 7,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"user": types.UserResponse{
@@ -182,7 +184,17 @@ func Me(ctx *gin.Context) {
 }
 
 func LogoutUser(ctx *gin.Context) {
-	ctx.SetCookie("token", "", -1, "/", "", true, true)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
@@ -334,7 +346,16 @@ func DeleteUser(ctx *gin.Context) {
 	}
 
 	// Clear the authentication cookie
-	ctx.SetCookie("token", "", -1, "/", "", true, true)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Account deleted successfully"})
 }
