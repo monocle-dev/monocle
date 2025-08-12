@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,10 @@ type UpdateUserRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password" binding:"omitempty,min=8"`
 }
+
+var (
+	Domain = os.Getenv("DOMAIN")
+)
 
 func CreateUser(ctx *gin.Context) {
 	var user CreateUserRequest
@@ -92,7 +97,7 @@ func CreateUser(ctx *gin.Context) {
 		Name:     "token",
 		Value:    token,
 		Path:     "/",
-		Domain:   "",
+		Domain:   Domain,
 		MaxAge:   60 * 60 * 24 * 7,
 		Secure:   true,
 		HttpOnly: true,
@@ -150,7 +155,7 @@ func LoginUser(ctx *gin.Context) {
 		Name:     "token",
 		Value:    token,
 		Path:     "/",
-		Domain:   "",
+		Domain:   Domain,
 		MaxAge:   60 * 60 * 24 * 7,
 		Secure:   true,
 		HttpOnly: true,
@@ -188,7 +193,7 @@ func LogoutUser(ctx *gin.Context) {
 		Name:     "token",
 		Value:    "",
 		Path:     "/",
-		Domain:   "",
+		Domain:   Domain,
 		MaxAge:   -1,
 		Secure:   true,
 		HttpOnly: true,
@@ -350,7 +355,7 @@ func DeleteUser(ctx *gin.Context) {
 		Name:     "token",
 		Value:    "",
 		Path:     "/",
-		Domain:   "",
+		Domain:   Domain,
 		MaxAge:   -1,
 		Secure:   true,
 		HttpOnly: true,
