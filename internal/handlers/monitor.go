@@ -551,10 +551,9 @@ func GetDashboard(ctx *gin.Context) {
 
 		var duration string
 
-		if incident.ResolvedAt != nil {
-			if incident.StartedAt != nil {
-				duration = incident.ResolvedAt.Sub(*incident.StartedAt).Round(time.Second).String()
-			}
+		if incident.ResolvedAt != nil && incident.StartedAt != nil {
+			durationTime := incident.ResolvedAt.Sub(*incident.StartedAt)
+			duration = formatDuration(durationTime)
 		}
 
 		incidentSummaries = append(incidentSummaries, IncidentSummary{
@@ -626,4 +625,30 @@ func sanitizeConfig(config map[string]interface{}, monitorType string) map[strin
 	}
 
 	return sanitized
+}
+
+func formatDuration(d time.Duration) string {
+	if d < 0 {
+		d = -d
+	}
+
+	h := int(d.Hours())
+	m := int(d.Minutes()) % 60
+	s := int(d.Seconds()) % 60
+
+	parts := []string{}
+
+	if h > 0 {
+		parts = append(parts, strconv.Itoa(h)+"h")
+	}
+
+	if m > 0 {
+		parts = append(parts, strconv.Itoa(m)+"m")
+	}
+
+	if h == 0 && m == 0 {
+		parts = append(parts, strconv.Itoa(s)+"s")
+	}
+
+	return strings.Join(parts, " ")
 }
